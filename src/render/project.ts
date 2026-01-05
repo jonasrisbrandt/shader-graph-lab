@@ -71,27 +71,61 @@ async function fetchText(url: string): Promise<string> {
   return response.text();
 }
 
-async function resolveIncludes(value: unknown, baseUrl: string): Promise<unknown> {
+async function expandShaderIncludes(
+  source: string,
+  baseUrl: string,
+  stack: Set<string>,
+  cache: Map<string, string>
+): Promise<string> {
+  const includePattern = /^[ \t]*#include\s+"([^"]+)"\s*$/gm;
+  let result = "";
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = includePattern.exec(source)) !== null) {
+    result += source.slice(lastIndex, match.index);
+    const includePath = match[1];
+    const includeUrl = resolveUrl(baseUrl, includePath);
+    if (stack.has(includeUrl)) {
+      throw new Error(`Shader include cycle detected at "${includeUrl}".`);
+    }
+    const cached = cache.get(includeUrl);
+    if (cached) {
+      result += cached;
+    } else {
+      stack.add(includeUrl);
+      const includeText = await fetchText(includeUrl);
+      const expanded = await expandShaderIncludes(includeText, includeUrl, stack, cache);
+      stack.delete(includeUrl);
+      cache.set(includeUrl, expanded);
+      result += expanded;
+    }
+    lastIndex = includePattern.lastIndex;
+  }
+  result += source.slice(lastIndex);
+  return result;
+}
+
+async function resolveIncludes(value: unknown, baseUrl: string, cache: Map<string, string>): Promise<unknown> {
   if (isIncludeRef(value)) {
     const url = resolveUrl(baseUrl, value.$include);
     const text = await fetchText(url);
     if (url.toLowerCase().endsWith(".json")) {
       const parsed = JSON.parse(text) as unknown;
-      return resolveIncludes(parsed, url);
+      return resolveIncludes(parsed, url, cache);
     }
-    return text;
+    return expandShaderIncludes(text, url, new Set([url]), cache);
   }
   if (Array.isArray(value)) {
     const resolved = [] as unknown[];
     for (const entry of value) {
-      resolved.push(await resolveIncludes(entry, baseUrl));
+      resolved.push(await resolveIncludes(entry, baseUrl, cache));
     }
     return resolved;
   }
   if (isObject(value)) {
     const resolved: Record<string, unknown> = {};
     for (const [key, entry] of Object.entries(value)) {
-      resolved[key] = await resolveIncludes(entry, baseUrl);
+      resolved[key] = await resolveIncludes(entry, baseUrl, cache);
     }
     return resolved;
   }
@@ -218,7 +252,8 @@ export async function loadProject(url: string): Promise<Project> {
   } catch (error) {
     throw new Error(`Failed to parse project JSON from "${resolvedUrl}".`);
   }
-  const resolved = (await resolveIncludes(raw, resolvedUrl)) as ProjectSource;
+  const includeCache = new Map<string, string>();
+  const resolved = (await resolveIncludes(raw, resolvedUrl, includeCache)) as ProjectSource;
   return buildProject(resolved, resolvedUrl);
 }
 

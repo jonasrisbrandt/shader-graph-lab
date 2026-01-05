@@ -51,6 +51,10 @@ Graph Definition -> Graph Runner -> Pass Execution -> Texture Pool -> Framebuffe
 - Use a tonemap pass as the final output (e.g., `components/tonemap`) and feed an optional LUT via `$asset`.
 - LUT assets can declare `lutSize`, which auto-populates `uLutSize` in passes that sample that asset.
 
+## Shader Chunks
+- GLSL files loaded via `$include` may use `#include "relative/path.glsl"` to pull in shared chunks.
+- Includes are expanded recursively with cycle detection.
+
 ## GPU Resources
 - Programs: shared fullscreen vertex shader + pass fragment shaders
 - Textures: pooled by format + size
