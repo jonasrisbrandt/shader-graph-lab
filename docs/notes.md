@@ -31,6 +31,8 @@
 - Added declarative Bloom component JSON and a circle+bloom project JSON with reusable shaders.
 - Added persistent outputs and `$prev.*` inputs for frame-to-frame feedback (ping-pong).
 - Added a feedback trails JSON project demo under `public/projects/feedback-trails/project.json`.
+- Added project assets (image/video) and `$asset.*` inputs for sampling external textures.
+- Added a texture input demo with an embedded SVG asset under `public/projects/texture-input/project.json`.
 
 ## Suggested Next Steps
 - Define a declarative graph spec (JSON or hybrid) and build a loader/validator to convert it into runtime passes.

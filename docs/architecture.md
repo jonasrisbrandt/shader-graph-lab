@@ -28,6 +28,11 @@ Graph Definition -> Graph Runner -> Pass Execution -> Texture Pool -> Framebuffe
 - Loader compiles declarative graphs into the same runtime GraphBuilder.
 - Usage (Vite dev server): `?project=/projects/input-sized/project.json` and optional `&graph=main`.
 
+## Asset Inputs
+- Project files can declare image/video assets and bind them via `source: "$asset.name"`.
+- Assets are loaded once and exposed as sampler2D inputs in passes.
+- Example: `?project=texture-input`.
+
 ## GPU Resources
 - Programs: shared fullscreen vertex shader + pass fragment shaders
 - Textures: pooled by format + size

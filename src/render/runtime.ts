@@ -1,5 +1,6 @@
 import { vec2 } from "gl-matrix";
-import { Graph, OutputRef } from "./graph";
+import { Graph } from "./graph";
+import { AssetTexture } from "./assets";
 import { PassDef, TextureDesc, TextureFormat, UniformSpec } from "./types";
 
 type TextureResource = {
@@ -215,6 +216,7 @@ function setUniform(gl: WebGL2RenderingContext, loc: WebGLUniformLocation, spec:
 export class GraphRunner {
   private gl: WebGL2RenderingContext;
   private graph: Graph;
+  private assets: Record<string, AssetTexture>;
   private pool = new TexturePool();
   private runtimePasses: PassRuntime[];
   private presentProgram: WebGLProgram;
@@ -223,9 +225,10 @@ export class GraphRunner {
   private clearTarget: RenderTarget;
   private persistent = new Map<string, { textures: TextureResource[]; index: number }>();
 
-  constructor(gl: WebGL2RenderingContext, graph: Graph) {
+  constructor(gl: WebGL2RenderingContext, graph: Graph, assets: Record<string, AssetTexture> = {}) {
     this.gl = gl;
     this.graph = graph;
+    this.assets = assets;
     this.allowFloat = Boolean(gl.getExtension("EXT_color_buffer_float"));
     if (!this.allowFloat) {
       console.warn("EXT_color_buffer_float not available; falling back to RGBA8 textures.");
@@ -294,9 +297,23 @@ export class GraphRunner {
           resource = prev.textures[prev.index];
           prevTextures.set(name, resource);
         } else {
+          if (ref.startsWith("$asset.")) {
+            const name = ref.slice("$asset.".length);
+            const asset = this.assets[name];
+            if (!asset) {
+              throw new Error(`Missing asset "${name}" for pass "${pass.id}".`);
+            }
+            asset.update?.();
+            resource = { texture: asset.texture, width: asset.width, height: asset.height, desc: {
+              format: "rgba8",
+              size: { kind: "custom", width: asset.width, height: asset.height },
+              filter: "linear",
+            } };
+          } else {
           resource = outputs.get(ref);
           if (!resource) {
             throw new Error(`Missing input texture "${ref}" for pass "${pass.id}".`);
+          }
           }
         }
         inputTextures.push(resource);
@@ -375,6 +392,17 @@ export class GraphRunner {
           if (ref.startsWith("$prev.")) {
             const name = ref.slice("$prev.".length);
             texture = prevTextures.get(name);
+          } else if (ref.startsWith("$asset.")) {
+            const name = ref.slice("$asset.".length);
+            const asset = this.assets[name];
+            if (asset) {
+              asset.update?.();
+              texture = { texture: asset.texture, width: asset.width, height: asset.height, desc: {
+                format: "rgba8",
+                size: { kind: "custom", width: asset.width, height: asset.height },
+                filter: "linear",
+              } };
+            }
           } else {
             texture = outputs.get(ref);
           }
@@ -409,6 +437,9 @@ export class GraphRunner {
         for (const input of Object.values(pass.inputs)) {
           const key = input.source;
           if (key.startsWith("$prev.")) {
+            continue;
+          }
+          if (key.startsWith("$asset.")) {
             continue;
           }
           const count = (usage.get(key) ?? 0) - 1;

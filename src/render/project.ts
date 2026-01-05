@@ -1,6 +1,6 @@
 import { ComponentSpec, instantiateComponent } from "./component";
 import { GraphBuilder } from "./graph";
-import { PassDef } from "./types";
+import { AssetSpec, PassDef } from "./types";
 
 export type IncludeRef = { $include: string };
 export type Ref = { $ref: string };
@@ -28,6 +28,7 @@ export type GraphSource = {
 export type ProjectSource = {
   shaders?: Record<string, FragmentSource>;
   components?: Record<string, ComponentSource>;
+  assets?: Record<string, AssetSpec>;
   graphs: Record<string, GraphSource>;
 };
 
@@ -38,8 +39,10 @@ export type GraphResolved = {
 };
 
 export type Project = {
+  baseUrl: string;
   shaders: Record<string, string>;
   components: Record<string, ComponentSpec>;
+  assets: Record<string, AssetSpec>;
   graphs: Record<string, GraphResolved>;
 };
 
@@ -199,11 +202,11 @@ function resolveGraphPassInputs(pass: PassDef, componentOutputs: Map<string, str
   return { ...pass, inputs };
 }
 
-function buildProject(source: ProjectSource): Project {
+function buildProject(source: ProjectSource, baseUrl: string): Project {
   const shaders = resolveShaderMap(source.shaders ?? {});
   const components = resolveComponentMap(source.components ?? {}, shaders);
   const graphs = resolveGraphMap(source.graphs, shaders);
-  return { shaders, components, graphs };
+  return { baseUrl, shaders, components, assets: source.assets ?? {}, graphs };
 }
 
 export async function loadProject(url: string): Promise<Project> {
@@ -216,7 +219,7 @@ export async function loadProject(url: string): Promise<Project> {
     throw new Error(`Failed to parse project JSON from "${resolvedUrl}".`);
   }
   const resolved = (await resolveIncludes(raw, resolvedUrl)) as ProjectSource;
-  return buildProject(resolved);
+  return buildProject(resolved, resolvedUrl);
 }
 
 export function buildGraphFromProject(project: Project, graphName: string) {
@@ -228,12 +231,25 @@ export function buildGraphFromProject(project: Project, graphName: string) {
   const builder = new GraphBuilder();
   const componentOutputs = new Map<string, string>();
 
+  const validateAssetRefs = (pass: PassDef) => {
+    for (const input of Object.values(pass.inputs ?? {})) {
+      if (!input.source.startsWith("$asset.")) continue;
+      const name = input.source.slice("$asset.".length);
+      if (!project.assets[name]) {
+        throw new Error(`Missing asset "${name}" for pass "${pass.id}".`);
+      }
+    }
+  };
+
   for (const instance of graph.components ?? []) {
     const spec = project.components[instance.component];
     if (!spec) {
       throw new Error(`Component "${instance.component}" not found in project.`);
     }
     const component = instantiateComponent(spec, instance.id, instance.bindings);
+    for (const pass of component.passes) {
+      validateAssetRefs(pass);
+    }
     builder.addComponent(component);
     for (const [name, ref] of Object.entries(component.outputs)) {
       componentOutputs.set(`${instance.id}.${name}`, ref);
@@ -241,6 +257,7 @@ export function buildGraphFromProject(project: Project, graphName: string) {
   }
 
   for (const pass of graph.passes ?? []) {
+    validateAssetRefs(pass);
     builder.addPass(resolveGraphPassInputs(pass, componentOutputs));
   }
 

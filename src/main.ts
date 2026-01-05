@@ -1,4 +1,5 @@
 import { GraphRunner } from "./render/runtime";
+import { loadProjectAssets } from "./render/assets";
 import { buildCircleBloomGraph } from "./scenes/circle";
 import { buildGradientGraph } from "./scenes/gradient";
 import { buildInputSizedGraph } from "./scenes/input-sized";
@@ -33,17 +34,31 @@ async function start() {
       : `/projects/${projectParam}/project.json`
     : null;
 
-  const graph = projectUrl
-    ? buildGraphFromProject(await loadProject(projectUrl), graphName)
-    : scene === "circle"
-    ? buildCircleBloomGraph()
-    : scene === "solid"
-    ? buildSolidGraph()
-    : scene === "gradient"
-      ? buildGradientGraph()
-      : scene === "input"
-        ? buildInputSizedGraph()
-        : buildPlasmaBloomGraph();
+  if (projectUrl) {
+    const project = await loadProject(projectUrl);
+    const assets = await loadProjectAssets(gl, project);
+    const graph = buildGraphFromProject(project, graphName);
+    createUniformUI(graph);
+    const runner = new GraphRunner(gl, graph, assets);
+    function frame(time: number) {
+      resizeCanvas();
+      runner.render(time * 0.001, canvas.width, canvas.height);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    return;
+  }
+
+  const graph =
+    scene === "circle"
+      ? buildCircleBloomGraph()
+      : scene === "solid"
+      ? buildSolidGraph()
+      : scene === "gradient"
+        ? buildGradientGraph()
+        : scene === "input"
+          ? buildInputSizedGraph()
+          : buildPlasmaBloomGraph();
 
   createUniformUI(graph);
 

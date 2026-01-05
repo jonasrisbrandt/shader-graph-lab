@@ -7,7 +7,8 @@ export type OutputRef = {
 
 export type InputRef =
   | { kind: "output"; passId: string; outputName: string }
-  | { kind: "prev"; outputName: string };
+  | { kind: "prev"; outputName: string }
+  | { kind: "asset"; name: string };
 
 export type ResolvedInput = {
   key: string;
@@ -46,6 +47,18 @@ function resolveInputs(inputs?: Record<string, InputSpec>): ResolvedInput[] {
         key,
         uniform: spec.uniform ?? key,
         ref: { kind: "prev", outputName },
+        expected: spec.expected,
+      };
+    }
+    if (spec.source.startsWith("$asset.")) {
+      const name = spec.source.slice("$asset.".length);
+      if (!name) {
+        throw new Error(`Invalid input source "${spec.source}". Use "$asset.name".`);
+      }
+      return {
+        key,
+        uniform: spec.uniform ?? key,
+        ref: { kind: "asset", name },
         expected: spec.expected,
       };
     }
@@ -182,6 +195,9 @@ export class GraphBuilder {
           }
           continue;
         }
+        if (input.ref.kind === "asset") {
+          continue;
+        }
         if (!passIds.has(input.ref.passId)) {
           throw new Error(`Pass "${pass.id}" references unknown pass "${input.ref.passId}".`);
         }
@@ -211,6 +227,9 @@ export class GraphBuilder {
     for (const pass of resolved) {
       for (const input of pass.resolvedInputs) {
         if (input.ref.kind === "prev") {
+          continue;
+        }
+        if (input.ref.kind === "asset") {
           continue;
         }
         if (input.ref.passId === pass.id) {
@@ -251,6 +270,9 @@ export class GraphBuilder {
     for (const pass of sorted) {
       for (const input of pass.resolvedInputs) {
         if (input.ref.kind === "prev") {
+          continue;
+        }
+        if (input.ref.kind === "asset") {
           continue;
         }
         const key = `${input.ref.passId}.${input.ref.outputName}`;

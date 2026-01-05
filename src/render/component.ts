@@ -81,6 +81,9 @@ function mapSource(instanceId: string, source: string, bindings: Record<string, 
     }
     return bound;
   }
+  if (source.startsWith("$asset.") || source.startsWith("$prev.")) {
+    return source;
+  }
   const parts = source.split(".");
   if (parts.length !== 2) {
     throw new Error(`Invalid source "${source}". Use "pass.output" or "$input.name".`);

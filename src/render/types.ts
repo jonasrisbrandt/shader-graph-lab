@@ -9,6 +9,19 @@ export type TextureFormat = "rgba8" | "rgba16f";
 
 export type TextureFilter = "nearest" | "linear";
 
+export type AssetType = "image" | "video";
+
+export type AssetSpec = {
+  type: AssetType;
+  url: string;
+  filter?: TextureFilter;
+  flipY?: boolean;
+  loop?: boolean;
+  muted?: boolean;
+  autoplay?: boolean;
+  playsInline?: boolean;
+};
+
 export type TextureDesc = {
   format: TextureFormat;
   size: SizeSpec;
