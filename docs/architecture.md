@@ -26,6 +26,11 @@ Graph Definition -> Graph Runner -> Pass Execution -> Texture Pool -> Framebuffe
 - `uAspect`: `uResolution.x / uResolution.y` (float).
 - `uTexelSize`: reciprocal of first input size, or output size if no inputs (vec2).
 
+## Per-Input Uniforms (Opt-In)
+- For each input uniform `uFoo`, the runtime can provide:
+  - `uFooSize`: input texture size in pixels (vec2).
+  - `uFooTexelSize`: reciprocal input size (vec2).
+
 ## Graph Model
 - Each pass defines 0..N inputs and 1..N outputs.
 - Inputs reference prior pass outputs by name (`pass.output`).

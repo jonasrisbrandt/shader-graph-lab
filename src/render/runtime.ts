@@ -187,6 +187,9 @@ function collectUniforms(gl: WebGL2RenderingContext, program: WebGLProgram, pass
   }
   for (const [key, input] of Object.entries(pass.inputs ?? {})) {
     names.add(input.uniform ?? key);
+    const uniformName = input.uniform ?? key;
+    names.add(`${uniformName}Size`);
+    names.add(`${uniformName}TexelSize`);
   }
   names.add("uTime");
   names.add("uDeltaTime");
@@ -281,6 +284,8 @@ export class GraphRunner {
 
     const resolution = vec2.create();
     const texelSize = vec2.create();
+    const inputSizeVec = vec2.create();
+    const inputTexelVec = vec2.create();
 
     for (const runtime of this.runtimePasses) {
       const pass = runtime.pass;
@@ -432,6 +437,16 @@ export class GraphRunner {
           const loc = runtime.uniforms.get(uniformName);
           if (loc) {
             gl.uniform1i(loc, unit);
+          }
+          const sizeLoc = runtime.uniforms.get(`${uniformName}Size`);
+          if (sizeLoc) {
+            vec2.set(inputSizeVec, texture.width, texture.height);
+            gl.uniform2fv(sizeLoc, inputSizeVec);
+          }
+          const texelLoc = runtime.uniforms.get(`${uniformName}TexelSize`);
+          if (texelLoc) {
+            vec2.set(inputTexelVec, 1 / texture.width, 1 / texture.height);
+            gl.uniform2fv(texelLoc, inputTexelVec);
           }
           unit++;
         }
