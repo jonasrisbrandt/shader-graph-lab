@@ -26,7 +26,7 @@ Graph Definition -> Graph Runner -> Pass Execution -> Texture Pool -> Framebuffe
 - Optional JSON project files can define shaders, components, and graphs.
 - Includes resolve external GLSL and component JSON files.
 - Loader compiles declarative graphs into the same runtime GraphBuilder.
-- Usage (Vite dev server): `?project=/projects/input-sized.json` and optional `&graph=main`.
+- Usage (Vite dev server): `?project=/projects/input-sized/project.json` and optional `&graph=main`.
 
 ## GPU Resources
 - Programs: shared fullscreen vertex shader + pass fragment shaders

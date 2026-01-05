@@ -1,11 +1,11 @@
 {
   "shaders": {
     "grid": { "$include": "./shaders/grid.frag.glsl" },
-    "blit": { "$include": "./shaders/blit.frag.glsl" },
+    "blit": { "$include": "../common/components/down-up/shaders/blit.frag.glsl" },
     "composite": { "$include": "./shaders/composite.frag.glsl" }
   },
   "components": {
-    "downUp": { "$include": "./components/down-up.json" }
+    "downUp": { "$include": "../common/components/down-up/component.json" }
   },
   "graphs": {
     "main": {

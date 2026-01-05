@@ -23,9 +23,15 @@ resizeCanvas();
 
 async function start() {
   const params = new URLSearchParams(window.location.search);
-  const projectUrl = params.get("project");
+  const projectParam = params.get("project");
   const graphName = params.get("graph") ?? "main";
   const scene = params.get("scene") ?? "plasma";
+
+  const projectUrl = projectParam
+    ? projectParam.includes("/") || projectParam.endsWith(".json")
+      ? projectParam
+      : `/projects/${projectParam}/project.json`
+    : null;
 
   const graph = projectUrl
     ? buildGraphFromProject(await loadProject(projectUrl), graphName)
