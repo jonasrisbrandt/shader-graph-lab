@@ -1,0 +1,24 @@
+{
+  "shaders": {
+    "raymarch": { "$include": "./shaders/raymarch.frag.glsl" }
+  },
+  "graphs": {
+    "main": {
+      "passes": [
+        {
+          "id": "raymarch",
+          "fragment": { "$ref": "shader.raymarch" },
+          "outputs": {
+            "color": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" }
+          },
+          "uniforms": {
+            "uLightDir": { "type": "f3", "value": [0.4, 0.7, 0.2], "min": -1, "max": 1 },
+            "uShadow": { "type": "f1", "value": 0.85, "min": 0, "max": 1 },
+            "uAo": { "type": "f1", "value": 1.0, "min": 0, "max": 2 }
+          }
+        }
+      ],
+      "output": "raymarch.color"
+    }
+  }
+}

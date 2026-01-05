@@ -39,6 +39,8 @@
 - Added per-input uniforms: `{uniform}Size` and `{uniform}TexelSize`.
 - Added shader chunk support via `#include` in GLSL files loaded with `$include`.
 - Added a three-layer noise stack project that uses shader chunks.
+- Added SDF shader chunks for 2D and 3D primitives.
+- Added an SDF 3D raymarch demo with lighting, soft shadows, and AO.
 
 ## Suggested Next Steps
 - Define a declarative graph spec (JSON or hybrid) and build a loader/validator to convert it into runtime passes.
