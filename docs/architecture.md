@@ -17,6 +17,15 @@ Graph Definition -> Graph Runner -> Pass Execution -> Texture Pool -> Framebuffe
 - update: evaluate time and dynamic uniforms
 - draw: bind inputs, render to pass outputs, present final output
 
+## Standard Uniforms (Opt-In)
+- Uniforms are only set if the shader declares them.
+- `uTime`: seconds since start (float).
+- `uDeltaTime`: seconds since last frame (float).
+- `uFrame`: frame counter (float).
+- `uResolution`: pass output resolution in pixels (vec2).
+- `uAspect`: `uResolution.x / uResolution.y` (float).
+- `uTexelSize`: reciprocal of first input size, or output size if no inputs (vec2).
+
 ## Graph Model
 - Each pass defines 0..N inputs and 1..N outputs.
 - Inputs reference prior pass outputs by name (`pass.output`).

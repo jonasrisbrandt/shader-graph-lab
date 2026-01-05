@@ -35,6 +35,7 @@
 - Added a texture input demo with an embedded SVG asset under `public/projects/texture-input/project.json`.
 - Added a tonemap component with optional LUT support; circle-bloom now routes through it.
 - LUT assets now support `lutSize`, which auto-sets `uLutSize`.
+- Added opt-in standard uniforms: `uTime`, `uDeltaTime`, `uFrame`, `uResolution`, `uAspect`, `uTexelSize`.
 
 ## Suggested Next Steps
 - Define a declarative graph spec (JSON or hybrid) and build a loader/validator to convert it into runtime passes.

@@ -189,8 +189,11 @@ function collectUniforms(gl: WebGL2RenderingContext, program: WebGLProgram, pass
     names.add(input.uniform ?? key);
   }
   names.add("uTime");
+  names.add("uDeltaTime");
+  names.add("uFrame");
   names.add("uResolution");
   names.add("uTexelSize");
+  names.add("uAspect");
 
   for (const name of names) {
     const loc = gl.getUniformLocation(program, name);
@@ -224,6 +227,8 @@ export class GraphRunner {
   private allowFloat: boolean;
   private clearTarget: RenderTarget;
   private persistent = new Map<string, { textures: TextureResource[]; index: number }>();
+  private frameIndex = 0;
+  private lastTimeSec: number | null = null;
 
   constructor(gl: WebGL2RenderingContext, graph: Graph, assets: Record<string, AssetTexture> = {}) {
     this.gl = gl;
@@ -266,6 +271,9 @@ export class GraphRunner {
 
   render(timeSec: number, width: number, height: number) {
     const gl = this.gl;
+    const deltaTime = this.lastTimeSec !== null ? Math.max(0, timeSec - this.lastTimeSec) : 0;
+    this.lastTimeSec = timeSec;
+    const frame = this.frameIndex++;
     const outputs: OutputMap = new Map();
     const usage = new Map(this.graph.usageCounts);
     const outputKey = `${this.graph.output.passId}.${this.graph.output.outputName}`;
@@ -365,9 +373,18 @@ export class GraphRunner {
       if (runtime.uniforms.has("uTime")) {
         gl.uniform1f(runtime.uniforms.get("uTime") as WebGLUniformLocation, timeSec);
       }
+      if (runtime.uniforms.has("uDeltaTime")) {
+        gl.uniform1f(runtime.uniforms.get("uDeltaTime") as WebGLUniformLocation, deltaTime);
+      }
+      if (runtime.uniforms.has("uFrame")) {
+        gl.uniform1f(runtime.uniforms.get("uFrame") as WebGLUniformLocation, frame);
+      }
       vec2.set(resolution, outWidth, outHeight);
       if (runtime.uniforms.has("uResolution")) {
         gl.uniform2fv(runtime.uniforms.get("uResolution") as WebGLUniformLocation, resolution);
+      }
+      if (runtime.uniforms.has("uAspect")) {
+        gl.uniform1f(runtime.uniforms.get("uAspect") as WebGLUniformLocation, outWidth / Math.max(1, outHeight));
       }
       const inputSize = inputSizes[0] ?? { width: outWidth, height: outHeight };
       vec2.set(texelSize, 1 / inputSize.width, 1 / inputSize.height);
