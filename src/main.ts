@@ -1,6 +1,7 @@
 import { GraphRunner } from "./render/runtime";
 import { buildCircleBloomGraph } from "./scenes/circle";
 import { buildGradientGraph } from "./scenes/gradient";
+import { buildInputSizedGraph } from "./scenes/input-sized";
 import { buildPlasmaBloomGraph } from "./scenes/plasma";
 import { buildSolidGraph } from "./scenes/solid";
 import { createUniformUI } from "./ui/uniforms";
@@ -27,6 +28,8 @@ const graph =
     ? buildSolidGraph()
     : scene === "gradient"
       ? buildGradientGraph()
+      : scene === "input"
+        ? buildInputSizedGraph()
       : buildPlasmaBloomGraph();
 
 createUniformUI(graph);

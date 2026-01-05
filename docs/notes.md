@@ -17,3 +17,20 @@
 
 ## Questions
 - Which renderer features are highest priority (textures, camera controls, post)?
+
+## Latest Summary
+- We have a WebGL2 fullscreen-pass render-graph framework in TypeScript with a builder/runtime split, texture pooling, and reusable components.
+- Scene wiring lives in `src/main.ts` with sample scenes: solid, gradient, plasma, and circle.
+- Added an input-sized sanity scene (`?scene=input`) that shows downsample -> upsample sizing anchored to input dimensions.
+- Bloom is implemented as a component with multi-scale downsample + blur, and is used by plasma and circle.
+- Uniforms generate lil-gui controls with per-uniform visibility and grouping; component instances are namespaced for UI and shader bindings.
+- Core render-graph types, builder, and runtime are modular and documented, with ADRs for Vite, WebGL2, and TypeScript + gl-matrix.
+- Component contracts now capture texture format/size expectations with early validation in component instantiation and graph build.
+- Added `SizeSpec.kind = "input"` to size outputs from a referenced input (with optional scale), validated in graph/component build.
+
+## Suggested Next Steps
+- Define a declarative graph spec (JSON or hybrid) and build a loader/validator to convert it into runtime passes.
+- Formalize component contracts (inputs/outputs, default formats, resize behavior) and add validation errors early.
+- Add a small diagnostics overlay (FPS + GL error checks) that can be toggled on/off.
+- Improve resize + DPR handling tests with a dedicated scene (flat color + grid) to validate scaling and sampling.
+- Add a basic material/shader library module for common fullscreen effects (noise, SDF shapes, gradients).

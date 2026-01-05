@@ -78,10 +78,21 @@ type BloomOptions = {
 const bloomSpec: ComponentSpec = {
   name: "bloom",
   inputs: {
-    src: "rgba16f/full",
+    src: {
+      format: "rgba16f",
+      size: { kind: "full" },
+      filter: "linear",
+    },
   },
   outputs: {
-    out: "combine.out",
+    out: {
+      ref: "combine.out",
+      contract: {
+        format: "rgba16f",
+        size: { kind: "full" },
+        filter: "linear",
+      },
+    },
   },
   passes: [
     {

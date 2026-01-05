@@ -1,4 +1,4 @@
-import { GraphDef, InputSpec, PassDef } from "./types";
+import { GraphDef, InputSpec, PassDef, SizeSpec, TextureContract, TextureDesc, TextureFilter } from "./types";
 
 export type OutputRef = {
   passId: string;
@@ -9,6 +9,7 @@ export type ResolvedInput = {
   key: string;
   uniform: string;
   ref: OutputRef;
+  expected?: TextureContract;
 };
 
 export type PassNode = PassDef & {
@@ -35,7 +36,56 @@ function resolveInputs(inputs?: Record<string, InputSpec>): ResolvedInput[] {
     key,
     uniform: spec.uniform ?? key,
     ref: parseRef(spec.source),
+    expected: spec.expected,
   }));
+}
+
+function normalizeFilter(filter?: TextureFilter) {
+  return filter ?? "linear";
+}
+
+function sizeToScale(size: SizeSpec): number | null {
+  if (size.kind === "full") return 1;
+  if (size.kind === "half") return 0.5;
+  if (size.kind === "scale") return size.scale;
+  return null;
+}
+
+function isSizeCompatible(expected: SizeSpec, actual: SizeSpec) {
+  if (expected.kind === "input" || actual.kind === "input") {
+    if (expected.kind !== "input" || actual.kind !== "input") {
+      return false;
+    }
+    const expectedScale = expected.scale ?? 1;
+    const actualScale = actual.scale ?? 1;
+    return Math.abs(expectedScale - actualScale) < 1e-6;
+  }
+  if (expected.kind === "custom" || actual.kind === "custom") {
+    return (
+      expected.kind === "custom" &&
+      actual.kind === "custom" &&
+      expected.width === actual.width &&
+      expected.height === actual.height
+    );
+  }
+  const expectedScale = sizeToScale(expected);
+  const actualScale = sizeToScale(actual);
+  if (expectedScale !== null && actualScale !== null) {
+    return Math.abs(expectedScale - actualScale) < 1e-6;
+  }
+  return expected.kind === actual.kind;
+}
+
+function validateTextureContract(label: string, contract: TextureContract, actual: TextureDesc) {
+  if (contract.format && contract.format !== actual.format) {
+    throw new Error(`${label} expects format "${contract.format}" but got "${actual.format}".`);
+  }
+  if (contract.filter && normalizeFilter(actual.filter) !== contract.filter) {
+    throw new Error(`${label} expects filter "${contract.filter}" but got "${normalizeFilter(actual.filter)}".`);
+  }
+  if (contract.size && !isSizeCompatible(contract.size, actual.size)) {
+    throw new Error(`${label} expects size "${contract.size.kind}" but got "${actual.size.kind}".`);
+  }
 }
 
 export class GraphBuilder {
@@ -66,10 +116,26 @@ export class GraphBuilder {
 
     const passIds = new Set(this.passes.map((p) => p.id));
     const outputKeys = new Set<string>();
+    const outputDescs = new Map<string, TextureDesc>();
     for (const pass of this.passes) {
       if (pass.outputs) {
-        for (const name of Object.keys(pass.outputs)) {
-          outputKeys.add(`${pass.id}.${name}`);
+        for (const [name, desc] of Object.entries(pass.outputs)) {
+          const key = `${pass.id}.${name}`;
+          outputKeys.add(key);
+          outputDescs.set(key, desc);
+          if (desc.size.kind === "input") {
+            const inputKey = desc.size.input ?? Object.keys(pass.inputs ?? {})[0];
+            if (!inputKey) {
+              throw new Error(`Pass "${pass.id}" output "${name}" uses input sizing but has no inputs.`);
+            }
+            if (!(pass.inputs && pass.inputs[inputKey])) {
+              throw new Error(`Pass "${pass.id}" output "${name}" references missing input "${inputKey}".`);
+            }
+            const scale = desc.size.scale ?? 1;
+            if (scale <= 0) {
+              throw new Error(`Pass "${pass.id}" output "${name}" uses non-positive input scale.`);
+            }
+          }
         }
       }
     }
@@ -87,6 +153,12 @@ export class GraphBuilder {
         const key = `${input.ref.passId}.${input.ref.outputName}`;
         if (!outputKeys.has(key)) {
           throw new Error(`Pass "${pass.id}" references missing output "${key}".`);
+        }
+        if (input.expected) {
+          const desc = outputDescs.get(key);
+          if (desc) {
+            validateTextureContract(`Pass "${pass.id}" input "${input.key}"`, input.expected, desc);
+          }
         }
       }
     }

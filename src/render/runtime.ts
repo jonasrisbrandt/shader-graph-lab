@@ -139,7 +139,13 @@ function resolveFormat(gl: WebGL2RenderingContext, format: TextureFormat, allowF
   return { internalFormat: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE };
 }
 
-function resolveSize(desc: TextureDesc, width: number, height: number) {
+function resolveSize(
+  desc: TextureDesc,
+  width: number,
+  height: number,
+  inputSizes?: Map<string, { width: number; height: number }>,
+  defaultInputKey?: string
+) {
   if (desc.size.kind === "full") {
     return { width, height };
   }
@@ -150,6 +156,21 @@ function resolveSize(desc: TextureDesc, width: number, height: number) {
     return {
       width: Math.max(1, Math.floor(width * desc.size.scale)),
       height: Math.max(1, Math.floor(height * desc.size.scale)),
+    };
+  }
+  if (desc.size.kind === "input") {
+    const inputKey = desc.size.input ?? defaultInputKey;
+    if (!inputKey) {
+      throw new Error("Input-sized output requires at least one input.");
+    }
+    const base = inputSizes?.get(inputKey);
+    if (!base) {
+      throw new Error(`Missing input "${inputKey}" for input-sized output.`);
+    }
+    const scale = desc.size.scale ?? 1;
+    return {
+      width: Math.max(1, Math.floor(base.width * scale)),
+      height: Math.max(1, Math.floor(base.height * scale)),
     };
   }
   return { width: desc.size.width, height: desc.size.height };
@@ -250,6 +271,7 @@ export class GraphRunner {
       const pass = runtime.pass;
       const inputTextures: TextureResource[] = [];
       const inputSizes: { width: number; height: number }[] = [];
+      const inputSizeMap = new Map<string, { width: number; height: number }>();
 
       for (const [key, input] of Object.entries(pass.inputs ?? {})) {
         const ref = input.source;
@@ -259,6 +281,7 @@ export class GraphRunner {
         }
         inputTextures.push(resource);
         inputSizes.push({ width: resource.width, height: resource.height });
+        inputSizeMap.set(key, { width: resource.width, height: resource.height });
       }
 
       const outputResources: TextureResource[] = [];
@@ -267,8 +290,9 @@ export class GraphRunner {
       if (pass.outputs) {
         const outputEntries = Object.entries(pass.outputs);
         let baseSize: { width: number; height: number } | null = null;
+        const defaultInputKey = Object.keys(pass.inputs ?? {})[0];
         for (const [name, desc] of outputEntries) {
-          const size = resolveSize(desc, width, height);
+          const size = resolveSize(desc, width, height, inputSizeMap, defaultInputKey);
           if (!baseSize) {
             baseSize = size;
           } else if (size.width !== baseSize.width || size.height !== baseSize.height) {
