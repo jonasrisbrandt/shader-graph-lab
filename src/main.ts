@@ -4,6 +4,7 @@ import { buildGradientGraph } from "./scenes/gradient";
 import { buildInputSizedGraph } from "./scenes/input-sized";
 import { buildPlasmaBloomGraph } from "./scenes/plasma";
 import { buildSolidGraph } from "./scenes/solid";
+import { buildGraphFromProject, loadProject } from "./render/project";
 import { createUniformUI } from "./ui/uniforms";
 
 const canvas = document.getElementById("gl-canvas") as HTMLCanvasElement;
@@ -20,9 +21,15 @@ function resizeCanvas() {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-const scene = new URLSearchParams(window.location.search).get("scene") ?? "plasma";
-const graph =
-  scene === "circle"
+async function start() {
+  const params = new URLSearchParams(window.location.search);
+  const projectUrl = params.get("project");
+  const graphName = params.get("graph") ?? "main";
+  const scene = params.get("scene") ?? "plasma";
+
+  const graph = projectUrl
+    ? buildGraphFromProject(await loadProject(projectUrl), graphName)
+    : scene === "circle"
     ? buildCircleBloomGraph()
     : scene === "solid"
     ? buildSolidGraph()
@@ -30,15 +37,20 @@ const graph =
       ? buildGradientGraph()
       : scene === "input"
         ? buildInputSizedGraph()
-      : buildPlasmaBloomGraph();
+        : buildPlasmaBloomGraph();
 
-createUniformUI(graph);
+  createUniformUI(graph);
 
-const runner = new GraphRunner(gl, graph);
+  const runner = new GraphRunner(gl, graph);
 
-function frame(time: number) {
-  resizeCanvas();
-  runner.render(time * 0.001, canvas.width, canvas.height);
+  function frame(time: number) {
+    resizeCanvas();
+    runner.render(time * 0.001, canvas.width, canvas.height);
+    requestAnimationFrame(frame);
+  }
   requestAnimationFrame(frame);
 }
-requestAnimationFrame(frame);
+
+start().catch((error) => {
+  console.error(error);
+});

@@ -27,6 +27,8 @@
 - Core render-graph types, builder, and runtime are modular and documented, with ADRs for Vite, WebGL2, and TypeScript + gl-matrix.
 - Component contracts now capture texture format/size expectations with early validation in component instantiation and graph build.
 - Added `SizeSpec.kind = "input"` to size outputs from a referenced input (with optional scale), validated in graph/component build.
+- Added a JSON project loader with includes for shaders and components, plus an example project under `public/projects/`.
+- Added declarative Bloom component JSON and a circle+bloom project JSON with reusable shaders.
 
 ## Suggested Next Steps
 - Define a declarative graph spec (JSON or hybrid) and build a loader/validator to convert it into runtime passes.

@@ -1,0 +1,42 @@
+{
+  "shaders": {
+    "grid": { "$include": "./shaders/grid.frag.glsl" },
+    "blit": { "$include": "./shaders/blit.frag.glsl" },
+    "composite": { "$include": "./shaders/composite.frag.glsl" }
+  },
+  "components": {
+    "downUp": { "$include": "./components/down-up.json" }
+  },
+  "graphs": {
+    "main": {
+      "passes": [
+        {
+          "id": "base",
+          "fragment": { "$ref": "shader.grid" },
+          "outputs": {
+            "color": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
+          }
+        },
+        {
+          "id": "composite",
+          "fragment": { "$ref": "shader.composite" },
+          "inputs": {
+            "uBase": { "source": "base.color" },
+            "uUp": { "source": "du.out" }
+          },
+          "outputs": {
+            "out": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
+          }
+        }
+      ],
+      "components": [
+        {
+          "id": "du",
+          "component": "downUp",
+          "bindings": { "src": "base.color" }
+        }
+      ],
+      "output": "composite.out"
+    }
+  }
+}

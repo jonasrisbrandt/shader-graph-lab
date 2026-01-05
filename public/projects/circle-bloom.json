@@ -1,0 +1,48 @@
+{
+  "shaders": {
+    "circle": { "$include": "./shaders/circle.frag.glsl" },
+    "combine": { "$include": "./shaders/combine.frag.glsl" },
+    "threshold": { "$include": "./shaders/threshold.frag.glsl" },
+    "downsample": { "$include": "./shaders/downsample.frag.glsl" },
+    "blur": { "$include": "./shaders/blur.frag.glsl" },
+    "bloomCombine": { "$include": "./shaders/bloom-combine.frag.glsl" }
+  },
+  "components": {
+    "bloom": { "$include": "./components/bloom.json" }
+  },
+  "graphs": {
+    "main": {
+      "passes": [
+        {
+          "id": "circle",
+          "fragment": { "$ref": "shader.circle" },
+          "outputs": {
+            "color": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" }
+          }
+        },
+        {
+          "id": "combine",
+          "fragment": { "$ref": "shader.combine" },
+          "inputs": {
+            "uBase": { "source": "circle.color" },
+            "uBloom": { "source": "bloom.out" }
+          },
+          "outputs": {
+            "out": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" }
+          },
+          "uniforms": {
+            "uIntensity": { "type": "f1", "value": 1.8, "min": 0, "max": 6, "ui": { "label": "intensity", "group": "bloom" } }
+          }
+        }
+      ],
+      "components": [
+        {
+          "id": "bloom",
+          "component": "bloom",
+          "bindings": { "src": "circle.color" }
+        }
+      ],
+      "output": "combine.out"
+    }
+  }
+}

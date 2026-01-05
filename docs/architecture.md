@@ -7,6 +7,7 @@ This project is a minimal WebGL2 fullscreen-pass render graph intended to scale 
 - Clear separation between graph description, runtime execution, and GPU resources.
 - Explicit texture formats and sizes per pass.
 - Easy to compose passes into reusable components (e.g., bloom).
+- Allow declarative project files with includes for shaders and components.
 
 ## System Diagram (Text)
 Graph Definition -> Graph Runner -> Pass Execution -> Texture Pool -> Framebuffer
@@ -19,7 +20,13 @@ Graph Definition -> Graph Runner -> Pass Execution -> Texture Pool -> Framebuffe
 ## Graph Model
 - Each pass defines 0..N inputs and 1..N outputs.
 - Inputs reference prior pass outputs by name (`pass.output`).
-- Outputs define format and size (`full`, `half`, or custom).
+- Outputs define format and size (`full`, `half`, `scale`, `custom`, or `input`).
+
+## Project Loader
+- Optional JSON project files can define shaders, components, and graphs.
+- Includes resolve external GLSL and component JSON files.
+- Loader compiles declarative graphs into the same runtime GraphBuilder.
+- Usage (Vite dev server): `?project=/projects/input-sized.json` and optional `&graph=main`.
 
 ## GPU Resources
 - Programs: shared fullscreen vertex shader + pass fragment shaders

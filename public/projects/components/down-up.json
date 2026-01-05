@@ -1,0 +1,39 @@
+{
+  "name": "downUp",
+  "inputs": {
+    "src": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
+  },
+  "outputs": {
+    "out": { "ref": "up.color" }
+  },
+  "passes": [
+    {
+      "id": "down",
+      "fragment": { "$ref": "shader.blit" },
+      "inputs": {
+        "uSrc": { "source": "$input.src" }
+      },
+      "outputs": {
+        "color": {
+          "format": "rgba8",
+          "size": { "kind": "input", "input": "uSrc", "scale": 0.5 },
+          "filter": "nearest"
+        }
+      }
+    },
+    {
+      "id": "up",
+      "fragment": { "$ref": "shader.blit" },
+      "inputs": {
+        "uSrc": { "source": "down.color" }
+      },
+      "outputs": {
+        "color": {
+          "format": "rgba8",
+          "size": { "kind": "input", "input": "uSrc", "scale": 2 },
+          "filter": "nearest"
+        }
+      }
+    }
+  ]
+}

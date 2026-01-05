@@ -163,11 +163,54 @@ export class GraphBuilder {
       }
     }
 
+    const passOrder = resolved.map((pass) => pass.id);
+    const passMap = new Map<string, PassNode>();
+    for (const pass of resolved) {
+      passMap.set(pass.id, pass);
+    }
+    const dependents = new Map<string, string[]>();
+    const indegree = new Map<string, number>();
+    for (const pass of resolved) {
+      indegree.set(pass.id, 0);
+    }
+    for (const pass of resolved) {
+      for (const input of pass.resolvedInputs) {
+        if (input.ref.passId === pass.id) {
+          throw new Error(`Pass "${pass.id}" has a self-referential input.`);
+        }
+        const list = dependents.get(input.ref.passId) ?? [];
+        list.push(pass.id);
+        dependents.set(input.ref.passId, list);
+        indegree.set(pass.id, (indegree.get(pass.id) ?? 0) + 1);
+      }
+    }
+    const sorted: PassNode[] = [];
+    const processed = new Set<string>();
+    while (sorted.length < resolved.length) {
+      let nextId: string | null = null;
+      for (const id of passOrder) {
+        if (processed.has(id)) continue;
+        if ((indegree.get(id) ?? 0) === 0) {
+          nextId = id;
+          break;
+        }
+      }
+      if (!nextId) {
+        throw new Error("Graph contains a cycle; cannot resolve pass order.");
+      }
+      processed.add(nextId);
+      const pass = passMap.get(nextId);
+      if (pass) sorted.push(pass);
+      for (const dep of dependents.get(nextId) ?? []) {
+        indegree.set(dep, (indegree.get(dep) ?? 0) - 1);
+      }
+    }
+
     const usageCounts = new Map<string, number>();
     for (const key of outputKeys) {
       usageCounts.set(key, 0);
     }
-    for (const pass of resolved) {
+    for (const pass of sorted) {
       for (const input of pass.resolvedInputs) {
         const key = `${input.ref.passId}.${input.ref.outputName}`;
         usageCounts.set(key, (usageCounts.get(key) ?? 0) + 1);
@@ -179,7 +222,7 @@ export class GraphBuilder {
     }
 
     return {
-      passes: resolved,
+      passes: sorted,
       output: this.outputRef,
       usageCounts,
     };
