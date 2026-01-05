@@ -1,0 +1,28 @@
+{
+  "name": "tonemap",
+  "inputs": {
+    "src": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" },
+    "lut": { "format": "rgba8", "size": { "kind": "custom", "width": 256, "height": 16 }, "filter": "linear" }
+  },
+  "outputs": {
+    "out": { "ref": "tonemap.out" }
+  },
+  "passes": [
+    {
+      "id": "tonemap",
+      "fragment": { "$ref": "shader.tonemap" },
+      "inputs": {
+        "uSrc": { "source": "$input.src" },
+        "uLut": { "source": "$input.lut" }
+      },
+      "outputs": {
+        "out": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
+      },
+      "uniforms": {
+        "uExposure": { "type": "f1", "value": 1.0, "min": 0.1, "max": 5 },
+        "uGamma": { "type": "f1", "value": 2.2, "min": 1.0, "max": 3.0 },
+        "uUseLut": { "type": "f1", "value": 1.0, "min": 0, "max": 1, "step": 1 }
+      }
+    }
+  ]
+}

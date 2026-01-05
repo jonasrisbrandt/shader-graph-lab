@@ -33,6 +33,10 @@ Graph Definition -> Graph Runner -> Pass Execution -> Texture Pool -> Framebuffe
 - Assets are loaded once and exposed as sampler2D inputs in passes.
 - Example: `?project=texture-input`.
 
+## Tonemap + LUT
+- Use a tonemap pass as the final output (e.g., `components/tonemap`) and feed an optional LUT via `$asset`.
+- LUT assets can declare `lutSize`, which auto-populates `uLutSize` in passes that sample that asset.
+
 ## GPU Resources
 - Programs: shared fullscreen vertex shader + pass fragment shaders
 - Textures: pooled by format + size

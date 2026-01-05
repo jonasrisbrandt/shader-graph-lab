@@ -1,14 +1,24 @@
 {
+  "assets": {
+    "identity": {
+      "type": "image",
+      "url": "../common/luts/identity-16.svg",
+      "filter": "linear",
+      "lutSize": 16
+    }
+  },
   "shaders": {
     "circle": { "$include": "./shaders/circle.frag.glsl" },
     "combine": { "$include": "./shaders/combine.frag.glsl" },
     "threshold": { "$include": "../common/components/bloom/shaders/threshold.frag.glsl" },
     "downsample": { "$include": "../common/components/bloom/shaders/downsample.frag.glsl" },
     "blur": { "$include": "../common/components/bloom/shaders/blur.frag.glsl" },
-    "bloomCombine": { "$include": "../common/components/bloom/shaders/bloom-combine.frag.glsl" }
+    "bloomCombine": { "$include": "../common/components/bloom/shaders/bloom-combine.frag.glsl" },
+    "tonemap": { "$include": "../common/components/tonemap/shaders/tonemap.frag.glsl" }
   },
   "components": {
-    "bloom": { "$include": "../common/components/bloom/component.json" }
+    "bloom": { "$include": "../common/components/bloom/component.json" },
+    "tonemap": { "$include": "../common/components/tonemap/component.json" }
   },
   "graphs": {
     "main": {
@@ -40,9 +50,14 @@
           "id": "bloom",
           "component": "bloom",
           "bindings": { "src": "circle.color" }
+        },
+        {
+          "id": "tonemap",
+          "component": "tonemap",
+          "bindings": { "src": "combine.out", "lut": "$asset.identity" }
         }
       ],
-      "output": "combine.out"
+      "output": "tonemap.out"
     }
   }
 }

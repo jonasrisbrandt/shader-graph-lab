@@ -231,6 +231,31 @@ export function buildGraphFromProject(project: Project, graphName: string) {
   const builder = new GraphBuilder();
   const componentOutputs = new Map<string, string>();
 
+  const applyAssetUniforms = (pass: PassDef): PassDef => {
+    let lutSize: number | null = null;
+    for (const input of Object.values(pass.inputs ?? {})) {
+      if (!input.source.startsWith("$asset.")) continue;
+      const name = input.source.slice("$asset.".length);
+      const asset = project.assets[name];
+      const assetLut = asset?.lutSize;
+      if (assetLut === undefined) continue;
+      if (lutSize !== null && Math.abs(lutSize - assetLut) > 1e-6) {
+        throw new Error(`Pass "${pass.id}" references assets with different LUT sizes.`);
+      }
+      lutSize = assetLut;
+    }
+    if (lutSize === null) {
+      return pass;
+    }
+    const uniforms = { ...(pass.uniforms ?? {}) };
+    uniforms.uLutSize = {
+      type: "f1",
+      value: lutSize,
+      ui: { show: false },
+    };
+    return { ...pass, uniforms };
+  };
+
   const validateAssetRefs = (pass: PassDef) => {
     for (const input of Object.values(pass.inputs ?? {})) {
       if (!input.source.startsWith("$asset.")) continue;
@@ -247,10 +272,11 @@ export function buildGraphFromProject(project: Project, graphName: string) {
       throw new Error(`Component "${instance.component}" not found in project.`);
     }
     const component = instantiateComponent(spec, instance.id, instance.bindings);
-    for (const pass of component.passes) {
+    const updatedPasses = component.passes.map((pass) => {
       validateAssetRefs(pass);
-    }
-    builder.addComponent(component);
+      return applyAssetUniforms(pass);
+    });
+    builder.addComponent({ passes: updatedPasses });
     for (const [name, ref] of Object.entries(component.outputs)) {
       componentOutputs.set(`${instance.id}.${name}`, ref);
     }
@@ -258,7 +284,8 @@ export function buildGraphFromProject(project: Project, graphName: string) {
 
   for (const pass of graph.passes ?? []) {
     validateAssetRefs(pass);
-    builder.addPass(resolveGraphPassInputs(pass, componentOutputs));
+    const resolved = resolveGraphPassInputs(pass, componentOutputs);
+    builder.addPass(applyAssetUniforms(resolved));
   }
 
   const outputRef = resolveGraphRef(graph.output, componentOutputs);

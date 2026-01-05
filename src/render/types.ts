@@ -20,6 +20,7 @@ export type AssetSpec = {
   muted?: boolean;
   autoplay?: boolean;
   playsInline?: boolean;
+  lutSize?: number;
 };
 
 export type TextureDesc = {
