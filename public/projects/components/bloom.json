@@ -1,0 +1,88 @@
+{
+  "name": "bloom",
+  "inputs": {
+    "src": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" }
+  },
+  "outputs": {
+    "out": {
+      "ref": "combine.out",
+      "contract": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" }
+    }
+  },
+  "passes": [
+    {
+      "id": "threshold",
+      "fragment": { "$ref": "shader.threshold" },
+      "inputs": { "uSrc": { "source": "$input.src" } },
+      "outputs": {
+        "bright": { "format": "rgba16f", "size": { "kind": "half" }, "filter": "linear" }
+      },
+      "uniforms": { "uThreshold": { "type": "f1", "value": 0.35, "min": 0, "max": 2 } }
+    },
+    {
+      "id": "blurX0",
+      "fragment": { "$ref": "shader.blur" },
+      "inputs": { "uSrc": { "source": "threshold.bright" } },
+      "outputs": { "out": { "format": "rgba16f", "size": { "kind": "half" }, "filter": "linear" } },
+      "uniforms": { "uDirection": { "type": "f2", "value": [1, 0], "ui": { "show": false } } }
+    },
+    {
+      "id": "blurY0",
+      "fragment": { "$ref": "shader.blur" },
+      "inputs": { "uSrc": { "source": "blurX0.out" } },
+      "outputs": { "out": { "format": "rgba16f", "size": { "kind": "half" }, "filter": "linear" } },
+      "uniforms": { "uDirection": { "type": "f2", "value": [0, 1], "ui": { "show": false } } }
+    },
+    {
+      "id": "down1",
+      "fragment": { "$ref": "shader.downsample" },
+      "inputs": { "uSrc": { "source": "blurY0.out" } },
+      "outputs": { "out": { "format": "rgba16f", "size": { "kind": "scale", "scale": 0.25 }, "filter": "linear" } }
+    },
+    {
+      "id": "blurX1",
+      "fragment": { "$ref": "shader.blur" },
+      "inputs": { "uSrc": { "source": "down1.out" } },
+      "outputs": { "out": { "format": "rgba16f", "size": { "kind": "scale", "scale": 0.25 }, "filter": "linear" } },
+      "uniforms": { "uDirection": { "type": "f2", "value": [1, 0], "ui": { "show": false } } }
+    },
+    {
+      "id": "blurY1",
+      "fragment": { "$ref": "shader.blur" },
+      "inputs": { "uSrc": { "source": "blurX1.out" } },
+      "outputs": { "out": { "format": "rgba16f", "size": { "kind": "scale", "scale": 0.25 }, "filter": "linear" } },
+      "uniforms": { "uDirection": { "type": "f2", "value": [0, 1], "ui": { "show": false } } }
+    },
+    {
+      "id": "down2",
+      "fragment": { "$ref": "shader.downsample" },
+      "inputs": { "uSrc": { "source": "blurY1.out" } },
+      "outputs": { "out": { "format": "rgba16f", "size": { "kind": "scale", "scale": 0.125 }, "filter": "linear" } }
+    },
+    {
+      "id": "blurX2",
+      "fragment": { "$ref": "shader.blur" },
+      "inputs": { "uSrc": { "source": "down2.out" } },
+      "outputs": { "out": { "format": "rgba16f", "size": { "kind": "scale", "scale": 0.125 }, "filter": "linear" } },
+      "uniforms": { "uDirection": { "type": "f2", "value": [1, 0], "ui": { "show": false } } }
+    },
+    {
+      "id": "blurY2",
+      "fragment": { "$ref": "shader.blur" },
+      "inputs": { "uSrc": { "source": "blurX2.out" } },
+      "outputs": { "out": { "format": "rgba16f", "size": { "kind": "scale", "scale": 0.125 }, "filter": "linear" } },
+      "uniforms": { "uDirection": { "type": "f2", "value": [0, 1], "ui": { "show": false } } }
+    },
+    {
+      "id": "combine",
+      "fragment": { "$ref": "shader.bloomCombine" },
+      "inputs": {
+        "uBloom0": { "source": "blurY0.out" },
+        "uBloom1": { "source": "blurY1.out" },
+        "uBloom2": { "source": "blurY2.out" }
+      },
+      "outputs": { "out": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" } },
+      "uniforms": { "uBloomWeights": { "type": "f3", "value": [0.7, 1.0, 1.2], "min": 0, "max": 3 } }
+    }
+  ]
+}
