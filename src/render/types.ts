@@ -13,6 +13,7 @@ export type TextureDesc = {
   format: TextureFormat;
   size: SizeSpec;
   filter?: TextureFilter;
+  persistent?: boolean;
 };
 
 export type TextureContract = {

@@ -5,10 +5,14 @@ export type OutputRef = {
   outputName: string;
 };
 
+export type InputRef =
+  | { kind: "output"; passId: string; outputName: string }
+  | { kind: "prev"; outputName: string };
+
 export type ResolvedInput = {
   key: string;
   uniform: string;
-  ref: OutputRef;
+  ref: InputRef;
   expected?: TextureContract;
 };
 
@@ -32,12 +36,26 @@ function parseRef(ref: string): OutputRef {
 
 function resolveInputs(inputs?: Record<string, InputSpec>): ResolvedInput[] {
   if (!inputs) return [];
-  return Object.entries(inputs).map(([key, spec]) => ({
-    key,
-    uniform: spec.uniform ?? key,
-    ref: parseRef(spec.source),
-    expected: spec.expected,
-  }));
+  return Object.entries(inputs).map(([key, spec]) => {
+    if (spec.source.startsWith("$prev.")) {
+      const outputName = spec.source.slice("$prev.".length);
+      if (!outputName) {
+        throw new Error(`Invalid input source "${spec.source}". Use "$prev.outputName".`);
+      }
+      return {
+        key,
+        uniform: spec.uniform ?? key,
+        ref: { kind: "prev", outputName },
+        expected: spec.expected,
+      };
+    }
+    return {
+      key,
+      uniform: spec.uniform ?? key,
+      ref: { kind: "output", ...parseRef(spec.source) },
+      expected: spec.expected,
+    };
+  });
 }
 
 function normalizeFilter(filter?: TextureFilter) {
@@ -147,6 +165,23 @@ export class GraphBuilder {
 
     for (const pass of resolved) {
       for (const input of pass.resolvedInputs) {
+        if (input.ref.kind === "prev") {
+          const desc = pass.outputs?.[input.ref.outputName];
+          if (!desc) {
+            throw new Error(
+              `Pass "${pass.id}" input "${input.key}" references missing output "${input.ref.outputName}".`
+            );
+          }
+          if (!desc.persistent) {
+            throw new Error(
+              `Pass "${pass.id}" input "${input.key}" references "${input.ref.outputName}" without persistent output.`
+            );
+          }
+          if (input.expected) {
+            validateTextureContract(`Pass "${pass.id}" input "${input.key}"`, input.expected, desc);
+          }
+          continue;
+        }
         if (!passIds.has(input.ref.passId)) {
           throw new Error(`Pass "${pass.id}" references unknown pass "${input.ref.passId}".`);
         }
@@ -175,6 +210,9 @@ export class GraphBuilder {
     }
     for (const pass of resolved) {
       for (const input of pass.resolvedInputs) {
+        if (input.ref.kind === "prev") {
+          continue;
+        }
         if (input.ref.passId === pass.id) {
           throw new Error(`Pass "${pass.id}" has a self-referential input.`);
         }
@@ -212,6 +250,9 @@ export class GraphBuilder {
     }
     for (const pass of sorted) {
       for (const input of pass.resolvedInputs) {
+        if (input.ref.kind === "prev") {
+          continue;
+        }
         const key = `${input.ref.passId}.${input.ref.outputName}`;
         usageCounts.set(key, (usageCounts.get(key) ?? 0) + 1);
       }

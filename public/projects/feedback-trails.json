@@ -1,0 +1,35 @@
+{
+  "shaders": {
+    "base": { "$include": "./shaders/feedback-base.frag.glsl" },
+    "feedback": { "$include": "./shaders/feedback.frag.glsl" }
+  },
+  "graphs": {
+    "main": {
+      "passes": [
+        {
+          "id": "base",
+          "fragment": { "$ref": "shader.base" },
+          "outputs": {
+            "color": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" }
+          }
+        },
+        {
+          "id": "feedback",
+          "fragment": { "$ref": "shader.feedback" },
+          "inputs": {
+            "uPrev": { "source": "$prev.color" },
+            "uBase": { "source": "base.color" }
+          },
+          "outputs": {
+            "color": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear", "persistent": true }
+          },
+          "uniforms": {
+            "uDecay": { "type": "f1", "value": 0.96, "min": 0.8, "max": 0.999, "step": 0.001 },
+            "uMix": { "type": "f1", "value": 0.7, "min": 0, "max": 1 }
+          }
+        }
+      ],
+      "output": "feedback.color"
+    }
+  }
+}

@@ -220,6 +220,8 @@ export class GraphRunner {
   private presentProgram: WebGLProgram;
   private vao: WebGLVertexArrayObject;
   private allowFloat: boolean;
+  private clearTarget: RenderTarget;
+  private persistent = new Map<string, { textures: TextureResource[]; index: number }>();
 
   constructor(gl: WebGL2RenderingContext, graph: Graph) {
     this.gl = gl;
@@ -241,6 +243,7 @@ export class GraphRunner {
       const renderTarget = pass.outputs ? new RenderTarget(gl) : null;
       return { pass, program, uniforms, renderTarget };
     });
+    this.clearTarget = new RenderTarget(gl);
 
     const presentFragment = `#version 300 es
     precision highp float;
@@ -263,6 +266,7 @@ export class GraphRunner {
     const outputs: OutputMap = new Map();
     const usage = new Map(this.graph.usageCounts);
     const outputKey = `${this.graph.output.passId}.${this.graph.output.outputName}`;
+    const persistentKeys = new Set<string>();
 
     const resolution = vec2.create();
     const texelSize = vec2.create();
@@ -272,12 +276,28 @@ export class GraphRunner {
       const inputTextures: TextureResource[] = [];
       const inputSizes: { width: number; height: number }[] = [];
       const inputSizeMap = new Map<string, { width: number; height: number }>();
+      const prevTextures = new Map<string, TextureResource>();
 
       for (const [key, input] of Object.entries(pass.inputs ?? {})) {
         const ref = input.source;
-        const resource = outputs.get(ref);
-        if (!resource) {
-          throw new Error(`Missing input texture "${ref}" for pass "${pass.id}".`);
+        let resource: TextureResource | undefined;
+        if (ref.startsWith("$prev.")) {
+          const name = ref.slice("$prev.".length);
+          const output = pass.outputs?.[name];
+          if (!output) {
+            throw new Error(`Missing output "${name}" for pass "${pass.id}".`);
+          }
+          const size = resolveSize(output, width, height, inputSizeMap, Object.keys(pass.inputs ?? {})[0]);
+          const format = resolveFormat(gl, output.format, this.allowFloat);
+          const keyName = `${pass.id}.${name}`;
+          const prev = this.ensurePersistent(keyName, output, size.width, size.height, format);
+          resource = prev.textures[prev.index];
+          prevTextures.set(name, resource);
+        } else {
+          resource = outputs.get(ref);
+          if (!resource) {
+            throw new Error(`Missing input texture "${ref}" for pass "${pass.id}".`);
+          }
         }
         inputTextures.push(resource);
         inputSizes.push({ width: resource.width, height: resource.height });
@@ -301,9 +321,19 @@ export class GraphRunner {
           outWidth = size.width;
           outHeight = size.height;
           const format = resolveFormat(gl, desc.format, this.allowFloat);
-          const texture = this.pool.acquire(gl, desc, size.width, size.height, format);
-          outputResources.push(texture);
-          outputs.set(`${pass.id}.${name}`, texture);
+          const key = `${pass.id}.${name}`;
+          if (desc.persistent) {
+            persistentKeys.add(key);
+            const persistent = this.ensurePersistent(key, desc, size.width, size.height, format);
+            const writeIndex = (persistent.index + 1) % persistent.textures.length;
+            const texture = persistent.textures[writeIndex];
+            outputResources.push(texture);
+            outputs.set(key, texture);
+          } else {
+            const texture = this.pool.acquire(gl, desc, size.width, size.height, format);
+            outputResources.push(texture);
+            outputs.set(key, texture);
+          }
         }
         runtime.renderTarget?.bind(outputResources);
         gl.viewport(0, 0, outWidth, outHeight);
@@ -341,7 +371,13 @@ export class GraphRunner {
         let unit = 0;
         for (const [key, input] of Object.entries(pass.inputs)) {
           const ref = input.source;
-          const texture = outputs.get(ref);
+          let texture: TextureResource | undefined;
+          if (ref.startsWith("$prev.")) {
+            const name = ref.slice("$prev.".length);
+            texture = prevTextures.get(name);
+          } else {
+            texture = outputs.get(ref);
+          }
           if (!texture) {
             throw new Error(`Missing input texture "${ref}" for pass "${pass.id}".`);
           }
@@ -358,9 +394,23 @@ export class GraphRunner {
 
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
+      if (pass.outputs) {
+        for (const [name, desc] of Object.entries(pass.outputs)) {
+          if (!desc.persistent) continue;
+          const key = `${pass.id}.${name}`;
+          const persistent = this.persistent.get(key);
+          if (persistent) {
+            persistent.index = (persistent.index + 1) % persistent.textures.length;
+          }
+        }
+      }
+
       if (pass.inputs) {
         for (const input of Object.values(pass.inputs)) {
           const key = input.source;
+          if (key.startsWith("$prev.")) {
+            continue;
+          }
           const count = (usage.get(key) ?? 0) - 1;
           usage.set(key, count);
           if (count <= 0 && key !== outputKey) {
@@ -389,10 +439,49 @@ export class GraphRunner {
       gl.uniform1i(loc, 0);
     }
     gl.drawArrays(gl.TRIANGLES, 0, 3);
-    this.pool.release(finalTexture);
+    if (!persistentKeys.has(outputKey)) {
+      this.pool.release(finalTexture);
+    }
     outputs.delete(outputKey);
-    for (const resource of outputs.values()) {
+    for (const [key, resource] of outputs.entries()) {
+      if (persistentKeys.has(key)) continue;
       this.pool.release(resource);
     }
+  }
+
+  private ensurePersistent(
+    key: string,
+    desc: TextureDesc,
+    width: number,
+    height: number,
+    format: FormatInfo
+  ) {
+    const existing = this.persistent.get(key);
+    if (
+      existing &&
+      existing.textures[0].width === width &&
+      existing.textures[0].height === height &&
+      existing.textures[0].desc.format === desc.format &&
+      (existing.textures[0].desc.filter ?? "linear") === (desc.filter ?? "linear")
+    ) {
+      return existing;
+    }
+    if (existing) {
+      for (const texture of existing.textures) {
+        this.pool.release(texture);
+      }
+    }
+    const textures: TextureResource[] = [];
+    for (let i = 0; i < 2; i++) {
+      const texture = this.pool.acquire(this.gl, desc, width, height, format);
+      this.clearTarget.bind([texture]);
+      this.gl.viewport(0, 0, width, height);
+      this.gl.clearColor(0, 0, 0, 0);
+      this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+      textures.push(texture);
+    }
+    const state = { textures, index: 0 };
+    this.persistent.set(key, state);
+    return state;
   }
 }
