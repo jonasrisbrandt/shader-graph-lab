@@ -7,6 +7,45 @@
   <style>
     html, body { height: 100%; margin: 0; background: #0e0f14; }
     canvas { display: block; width: 100vw; height: 100vh; }
+    #error-overlay,
+    #debug-overlay {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      z-index: 20;
+      display: none;
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(12, 14, 18, 0.92);
+      color: #f2f2f2;
+      font: 12px/1.4 Consolas, Menlo, Monaco, "Courier New", monospace;
+      border-radius: 8px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+    }
+    #error-overlay { top: 16px; }
+    #debug-overlay { bottom: 16px; max-height: 40vh; overflow: auto; }
+    #error-overlay.is-visible,
+    #debug-overlay.is-visible { display: block; }
+    .overlay-header {
+      font-weight: 600;
+      margin-bottom: 8px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 11px;
+      color: #f5a97f;
+    }
+    .overlay-message { margin: 0; white-space: pre-wrap; }
+    .overlay-dismiss {
+      margin-top: 10px;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #f2f2f2;
+      padding: 6px 10px;
+      font: inherit;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .overlay-dismiss:hover { border-color: rgba(255, 255, 255, 0.4); }
   </style>
 </head>
 <body>

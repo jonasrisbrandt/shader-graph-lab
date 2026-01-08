@@ -6,6 +6,9 @@ import { buildInputSizedGraph } from "./scenes/input-sized";
 import { buildPlasmaBloomGraph } from "./scenes/plasma";
 import { buildSolidGraph } from "./scenes/solid";
 import { buildGraphFromProject, loadProject } from "./render/project";
+import { OrbitCameraController, StaticCameraController } from "./ui/camera";
+import { createDebugOverlay } from "./ui/debug-overlay";
+import { createErrorOverlay } from "./ui/error-overlay";
 import { createUniformUI } from "./ui/uniforms";
 
 const canvas = document.getElementById("gl-canvas") as HTMLCanvasElement;
@@ -14,19 +17,53 @@ if (!gl) {
   throw new Error("WebGL2 is not supported in this browser.");
 }
 
-function resizeCanvas() {
+const errorOverlay = createErrorOverlay();
+const debugOverlay = createDebugOverlay();
+let debugEnabled = false;
+let runner: GraphRunner | null = null;
+let outputScale = 1;
+let cameraController: OrbitCameraController | StaticCameraController | null = null;
+
+function resizeCanvas(scale: number) {
   const dpr = Math.max(1, window.devicePixelRatio || 1);
-  canvas.width = Math.floor(canvas.clientWidth * dpr);
-  canvas.height = Math.floor(canvas.clientHeight * dpr);
+  const nextWidth = Math.floor(canvas.clientWidth * dpr * scale);
+  const nextHeight = Math.floor(canvas.clientHeight * dpr * scale);
+  if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+    canvas.width = nextWidth;
+    canvas.height = nextHeight;
+  }
 }
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
+window.addEventListener("resize", () => resizeCanvas(outputScale));
+resizeCanvas(outputScale);
 
 async function start() {
   const params = new URLSearchParams(window.location.search);
   const projectParam = params.get("project");
   const graphName = params.get("graph") ?? "main";
   const scene = params.get("scene") ?? "plasma";
+  const scaleParam = params.get("scale");
+  const debugParam = params.get("debug");
+  const cameraParam = params.get("camera") ?? "orbit";
+  const renderScale = scaleParam ? Number.parseFloat(scaleParam) : 1;
+  outputScale = Number.isFinite(renderScale) && renderScale > 0 ? renderScale : 1;
+  debugEnabled = debugParam === "1" || debugParam === "true";
+  debugOverlay.setVisible(debugEnabled);
+
+  cameraController?.dispose();
+  if (cameraParam === "static") {
+    cameraController = new StaticCameraController({
+      position: [0, 0, 3],
+      target: [0, 0, 0],
+      up: [0, 1, 0],
+      fov: Math.PI / 3,
+    });
+  } else {
+    cameraController = new OrbitCameraController(canvas, {
+      target: [0, 0, 0],
+      radius: 3,
+      fov: Math.PI / 3,
+    });
+  }
 
   const projectUrl = projectParam
     ? projectParam.includes("/") || projectParam.endsWith(".json")
@@ -39,11 +76,35 @@ async function start() {
     const assets = await loadProjectAssets(gl, project);
     const graph = buildGraphFromProject(project, graphName);
     createUniformUI(graph);
-    const runner = new GraphRunner(gl, graph, assets);
+    runner = new GraphRunner(gl, graph, assets, { debug: debugEnabled });
+    let lastFrameMs = 0;
+    let fps = 0;
     function frame(time: number) {
-      resizeCanvas();
-      runner.render(time * 0.001, canvas.width, canvas.height);
-      requestAnimationFrame(frame);
+      try {
+        resizeCanvas(outputScale);
+        if (runner) {
+          const delta = lastFrameMs > 0 ? time - lastFrameMs : 0;
+          lastFrameMs = time;
+          const deltaSec = delta / 1000;
+          cameraController?.update(deltaSec);
+          if (cameraController) {
+            runner.setCamera(cameraController.getState());
+          }
+          runner.render(time * 0.001, canvas.width, canvas.height);
+          const instantFps = delta > 0 ? 1000 / delta : 0;
+          fps = fps === 0 ? instantFps : fps * 0.9 + instantFps * 0.1;
+          debugOverlay.update(runner.getDebugSnapshot(), {
+            fps,
+            width: canvas.width,
+            height: canvas.height,
+            scale: outputScale,
+          });
+        }
+        requestAnimationFrame(frame);
+      } catch (error) {
+        console.error(error);
+        errorOverlay.show(error);
+      }
     }
     requestAnimationFrame(frame);
     return;
@@ -62,16 +123,49 @@ async function start() {
 
   createUniformUI(graph);
 
-  const runner = new GraphRunner(gl, graph);
+  runner = new GraphRunner(gl, graph, {}, { debug: debugEnabled });
+  let lastFrameMs = 0;
+  let fps = 0;
 
   function frame(time: number) {
-    resizeCanvas();
-    runner.render(time * 0.001, canvas.width, canvas.height);
-    requestAnimationFrame(frame);
+    try {
+      resizeCanvas(outputScale);
+      if (runner) {
+        const delta = lastFrameMs > 0 ? time - lastFrameMs : 0;
+        lastFrameMs = time;
+        const deltaSec = delta / 1000;
+        cameraController?.update(deltaSec);
+        if (cameraController) {
+          runner.setCamera(cameraController.getState());
+        }
+        runner.render(time * 0.001, canvas.width, canvas.height);
+        const instantFps = delta > 0 ? 1000 / delta : 0;
+        fps = fps === 0 ? instantFps : fps * 0.9 + instantFps * 0.1;
+        debugOverlay.update(runner.getDebugSnapshot(), {
+          fps,
+          width: canvas.width,
+          height: canvas.height,
+          scale: outputScale,
+        });
+      }
+      requestAnimationFrame(frame);
+    } catch (error) {
+      console.error(error);
+      errorOverlay.show(error);
+    }
   }
   requestAnimationFrame(frame);
 }
 
 start().catch((error) => {
   console.error(error);
+  errorOverlay.show(error);
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key.toLowerCase() === "d") {
+    debugEnabled = !debugEnabled;
+    debugOverlay.setVisible(debugEnabled);
+    runner?.setDebugEnabled(debugEnabled);
+  }
 });

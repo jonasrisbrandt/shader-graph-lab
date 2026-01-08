@@ -25,6 +25,7 @@ export type Graph = {
   passes: PassNode[];
   output: OutputRef;
   usageCounts: Map<string, number>;
+  uiGroups?: Record<string, { label?: string; order?: number; collapsed?: boolean }>;
 };
 
 function parseRef(ref: string): OutputRef {
@@ -140,7 +141,7 @@ export class GraphBuilder {
     return this;
   }
 
-  build(): Graph {
+  build(uiGroups?: Record<string, { label?: string; order?: number; collapsed?: boolean }>): Graph {
     if (!this.outputRef) {
       throw new Error("Graph output not set.");
     }
@@ -288,6 +289,7 @@ export class GraphBuilder {
       passes: sorted,
       output: this.outputRef,
       usageCounts,
+      uiGroups,
     };
   }
 }

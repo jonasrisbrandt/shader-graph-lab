@@ -1,0 +1,83 @@
+{
+  "assets": {
+    "identity": {
+      "type": "image",
+      "url": "../common/luts/identity-16.svg",
+      "filter": "linear",
+      "lutSize": 16
+    }
+  },
+  "shaders": {
+    "metaballs": { "$include": "./shaders/metaballs.frag.glsl" },
+    "combine": { "$include": "../circle-bloom/shaders/combine.frag.glsl" },
+    "threshold": { "$include": "../common/components/bloom/shaders/threshold.frag.glsl" },
+    "downsample": { "$include": "../common/components/bloom/shaders/downsample.frag.glsl" },
+    "blur": { "$include": "../common/components/bloom/shaders/blur.frag.glsl" },
+    "bloomCombine": { "$include": "../common/components/bloom/shaders/bloom-combine.frag.glsl" },
+    "tonemap": { "$include": "../common/components/tonemap/shaders/tonemap.frag.glsl" }
+  },
+  "components": {
+    "bloom": { "$include": "../common/components/bloom/component.json" },
+    "tonemap": { "$include": "../common/components/tonemap/component.json" }
+  },
+  "graphs": {
+    "main": {
+      "uiGroups": {
+        "Lighting": { "order": 1 },
+        "Material": { "order": 2 },
+        "Metaballs": { "order": 3 },
+        "bloom": { "label": "Bloom", "order": 4 },
+        "tonemap": { "label": "Tonemap", "order": 5 }
+      },
+      "passes": [
+        {
+          "id": "metaballs",
+          "fragment": { "$ref": "shader.metaballs" },
+          "outputs": {
+            "color": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" }
+          },
+          "uniforms": {
+            "uLightDir": { "type": "f3", "value": [0.6, 0.8, 0.4], "min": -1, "max": 1, "step": 0.01, "ui": { "group": "Lighting", "label": "Light Dir" } },
+            "uShadowStrength": { "type": "f1", "value": 0.7, "min": 0, "max": 1, "step": 0.01, "ui": { "group": "Lighting", "label": "Shadow Strength" } },
+            "uShadowK": { "type": "f1", "value": 18.0, "min": 2, "max": 64, "step": 0.5, "ui": { "group": "Lighting", "label": "Shadow Softness" } },
+            "uAoStrength": { "type": "f1", "value": 1.0, "min": 0, "max": 2, "step": 0.01, "ui": { "group": "Lighting", "label": "AO Strength" } },
+            "uAmbient": { "type": "f1", "value": 0.12, "min": 0, "max": 0.6, "step": 0.01, "ui": { "group": "Lighting", "label": "Ambient" } },
+            "uSpecStrength": { "type": "f1", "value": 0.35, "min": 0, "max": 2, "step": 0.01, "ui": { "group": "Material", "label": "Spec Strength" } },
+            "uSpecPower": { "type": "f1", "value": 32.0, "min": 2, "max": 128, "step": 1, "ui": { "group": "Material", "label": "Spec Power" } },
+            "uRimStrength": { "type": "f1", "value": 0.4, "min": 0, "max": 2, "step": 0.01, "ui": { "group": "Material", "label": "Rim Strength" } },
+            "uRimPower": { "type": "f1", "value": 2.6, "min": 0.5, "max": 6, "step": 0.1, "ui": { "group": "Material", "label": "Rim Power" } },
+            "uBlendK": { "type": "f1", "value": 0.45, "min": 0.05, "max": 1.2, "step": 0.01, "ui": { "group": "Metaballs", "label": "Blend" } },
+            "uBallCount": { "type": "f1", "value": 3, "min": 1, "max": 16, "step": 1, "ui": { "group": "Metaballs", "label": "Ball Count" } }
+          }
+        },
+        {
+          "id": "combine",
+          "fragment": { "$ref": "shader.combine" },
+          "inputs": {
+            "uBase": { "source": "metaballs.color" },
+            "uBloom": { "source": "bloom.out" }
+          },
+          "outputs": {
+            "out": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" }
+          },
+          "uniforms": {
+            "uIntensity": { "type": "f1", "value": 1.2, "min": 0, "max": 4, "step": 0.01, "ui": { "group": "bloom", "label": "Bloom Intensity" } }
+          }
+        }
+      ],
+      "components": [
+        {
+          "id": "bloom",
+          "component": "bloom",
+          "bindings": { "src": "metaballs.color" }
+        },
+        {
+          "id": "tonemap",
+          "component": "tonemap",
+          "bindings": { "src": "combine.out", "lut": "$asset.identity" }
+        }
+      ],
+      "output": "tonemap.out"
+    }
+  }
+}

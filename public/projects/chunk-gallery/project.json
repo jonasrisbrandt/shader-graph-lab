@@ -1,0 +1,117 @@
+{
+  "shaders": {
+    "math": { "$include": "./shaders/demo-math.frag.glsl" },
+    "coords": { "$include": "./shaders/demo-coords.frag.glsl" },
+    "noise": { "$include": "./shaders/demo-noise.frag.glsl" },
+    "sdf2d": { "$include": "./shaders/demo-sdf2d.frag.glsl" },
+    "sdf3d": { "$include": "./shaders/demo-sdf3d.frag.glsl" },
+    "color": { "$include": "./shaders/demo-color.frag.glsl" },
+    "blend": { "$include": "./shaders/demo-blend.frag.glsl" },
+    "post": { "$include": "./shaders/demo-post.frag.glsl" },
+    "composite": { "$include": "./shaders/composite.frag.glsl" }
+  },
+  "graphs": {
+    "main": {
+      "uiGroups": {
+        "Animation": { "order": 1 },
+        "Noise": { "order": 2 },
+        "Blend": { "order": 3 },
+        "Post": { "order": 4 }
+      },
+      "passes": [
+        {
+          "id": "demoMath",
+          "fragment": { "$ref": "shader.math" },
+          "outputs": {
+            "color": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
+          }
+        },
+        {
+          "id": "demoCoords",
+          "fragment": { "$ref": "shader.coords" },
+          "outputs": {
+            "color": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
+          }
+        },
+        {
+          "id": "demoNoise",
+          "fragment": { "$ref": "shader.noise" },
+          "uniforms": {
+            "uNoiseSpeed": { "type": "f1", "value": 0.4, "min": 0, "max": 2, "step": 0.01, "ui": { "group": "Noise", "label": "Noise Speed" } }
+          },
+          "outputs": {
+            "color": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
+          }
+        },
+        {
+          "id": "demoSdf2d",
+          "fragment": { "$ref": "shader.sdf2d" },
+          "outputs": {
+            "color": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
+          }
+        },
+        {
+          "id": "demoSdf3d",
+          "fragment": { "$ref": "shader.sdf3d" },
+          "outputs": {
+            "color": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
+          }
+        },
+        {
+          "id": "demoColor",
+          "fragment": { "$ref": "shader.color" },
+          "outputs": {
+            "color": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
+          }
+        },
+        {
+          "id": "demoBlend",
+          "fragment": { "$ref": "shader.blend" },
+          "inputs": {
+            "uA": { "source": "demoMath.color" },
+            "uB": { "source": "demoNoise.color" }
+          },
+          "uniforms": {
+            "uBlendMix": { "type": "f1", "value": 0.5, "min": 0, "max": 1, "step": 0.01, "ui": { "group": "Blend", "label": "Blend Mix" } }
+          },
+          "outputs": {
+            "color": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
+          }
+        },
+        {
+          "id": "demoPost",
+          "fragment": { "$ref": "shader.post" },
+          "inputs": {
+            "uSrc": { "source": "demoColor.color" }
+          },
+          "uniforms": {
+            "uVignette": { "type": "f1", "value": 0.6, "min": 0, "max": 1, "step": 0.01, "ui": { "group": "Post", "label": "Vignette" } },
+            "uGrain": { "type": "f1", "value": 0.08, "min": 0, "max": 0.3, "step": 0.005, "ui": { "group": "Post", "label": "Grain" } },
+            "uChromatic": { "type": "f1", "value": 2.0, "min": 0, "max": 6, "step": 0.1, "ui": { "group": "Post", "label": "Chromatic" } }
+          },
+          "outputs": {
+            "color": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
+          }
+        },
+        {
+          "id": "composite",
+          "fragment": { "$ref": "shader.composite" },
+          "inputs": {
+            "uA": { "source": "demoMath.color" },
+            "uB": { "source": "demoCoords.color" },
+            "uC": { "source": "demoNoise.color" },
+            "uD": { "source": "demoSdf2d.color" },
+            "uE": { "source": "demoSdf3d.color" },
+            "uF": { "source": "demoColor.color" },
+            "uG": { "source": "demoBlend.color" },
+            "uH": { "source": "demoPost.color" }
+          },
+          "outputs": {
+            "out": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
+          }
+        }
+      ],
+      "output": "composite.out"
+    }
+  }
+}

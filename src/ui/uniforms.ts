@@ -41,20 +41,41 @@ function addVector(gui: GUI, label: string, spec: UniformSpec) {
 export function createUniformUI(graph: Graph) {
   const gui = new GUI({ title: "Uniforms" });
   const folders = new Map<string, GUI>();
+  const groupMeta = graph.uiGroups ?? {};
 
   for (const pass of graph.passes) {
     if (!pass.uniforms) continue;
     for (const [name, spec] of Object.entries(pass.uniforms)) {
       if (spec.ui?.show === false) continue;
       const group = spec.ui?.group ?? pass.id;
-      const folder = folders.get(group) ?? gui.addFolder(group);
-      folders.set(group, folder);
+      let folder = folders.get(group);
+      if (!folder) {
+        const label = groupMeta[group]?.label ?? group;
+        folder = gui.addFolder(label);
+        if (groupMeta[group]?.collapsed) {
+          folder.close();
+        }
+        folders.set(group, folder);
+      }
       const label = spec.ui?.label ?? name;
       if (spec.type === "f1") {
         addScalar(folder, label, spec);
       } else {
         addVector(folder, label, spec);
       }
+    }
+  }
+
+  const orderedGroups = Object.entries(groupMeta)
+    .map(([group, meta]) => ({
+      group,
+      order: typeof meta.order === "number" ? meta.order : Number.POSITIVE_INFINITY,
+    }))
+    .sort((a, b) => a.order - b.order);
+  for (const { group } of orderedGroups) {
+    const folder = folders.get(group);
+    if (folder && (folder as unknown as { domElement?: HTMLElement }).domElement) {
+      gui.domElement.appendChild((folder as unknown as { domElement: HTMLElement }).domElement);
     }
   }
 

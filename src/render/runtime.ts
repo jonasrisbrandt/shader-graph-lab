@@ -1,7 +1,7 @@
 import { vec2 } from "gl-matrix";
 import { Graph } from "./graph";
 import { AssetTexture } from "./assets";
-import { PassDef, TextureDesc, TextureFormat, UniformSpec } from "./types";
+import { PassDef, TextureDesc, TextureFilter, TextureFormat, UniformSpec } from "./types";
 
 type TextureResource = {
   texture: WebGLTexture;
@@ -18,7 +18,40 @@ type PassRuntime = {
   pass: PassDef;
   program: WebGLProgram;
   uniforms: Map<string, WebGLUniformLocation>;
+  uniformTypes: Map<string, number>;
   renderTarget: RenderTarget | null;
+};
+
+export type DebugInputInfo = {
+  source: string;
+  width: number;
+  height: number;
+};
+
+export type DebugOutputInfo = {
+  width: number;
+  height: number;
+  format: TextureFormat;
+  filter?: TextureFilter;
+  persistent?: boolean;
+};
+
+export type PassDebugInfo = {
+  id: string;
+  inputs: Record<string, DebugInputInfo>;
+  outputs: Record<string, DebugOutputInfo>;
+  renderSize: { width: number; height: number };
+};
+
+export type GraphRunnerOptions = {
+  debug?: boolean;
+};
+
+export type CameraUniforms = {
+  position: [number, number, number];
+  target: [number, number, number];
+  up: [number, number, number];
+  fov: number;
 };
 
 type FormatInfo = {
@@ -177,8 +210,45 @@ function resolveSize(
   return { width: desc.size.width, height: desc.size.height };
 }
 
+function collectUniformTypes(gl: WebGL2RenderingContext, program: WebGLProgram) {
+  const uniformTypes = new Map<string, number>();
+  const count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS) as number;
+  for (let i = 0; i < count; i++) {
+    const info = gl.getActiveUniform(program, i);
+    if (!info) continue;
+    const name = info.name.endsWith("[0]") ? info.name.slice(0, -3) : info.name;
+    uniformTypes.set(name, info.type);
+  }
+  return uniformTypes;
+}
+
+function formatUniformType(gl: WebGL2RenderingContext, type: number) {
+  if (type === gl.FLOAT) return "float";
+  if (type === gl.FLOAT_VEC2) return "vec2";
+  if (type === gl.FLOAT_VEC3) return "vec3";
+  if (type === gl.FLOAT_VEC4) return "vec4";
+  if (type === gl.SAMPLER_2D) return "sampler2D";
+  return `0x${type.toString(16)}`;
+}
+
+function warnUniformType(
+  gl: WebGL2RenderingContext,
+  passId: string,
+  name: string,
+  expected: number,
+  actual: number
+) {
+  console.warn(
+    `Pass "${passId}" uniform "${name}" is ${formatUniformType(gl, actual)} but expected ${formatUniformType(
+      gl,
+      expected
+    )} for auto-uniform injection.`
+  );
+}
+
 function collectUniforms(gl: WebGL2RenderingContext, program: WebGLProgram, pass: PassDef) {
   const uniforms = new Map<string, WebGLUniformLocation>();
+  const uniformTypes = collectUniformTypes(gl, program);
   const names = new Set<string>();
   if (pass.uniforms) {
     for (const key of Object.keys(pass.uniforms)) {
@@ -197,6 +267,10 @@ function collectUniforms(gl: WebGL2RenderingContext, program: WebGLProgram, pass
   names.add("uResolution");
   names.add("uTexelSize");
   names.add("uAspect");
+  names.add("uCameraPos");
+  names.add("uCameraTarget");
+  names.add("uCameraUp");
+  names.add("uCameraFov");
 
   for (const name of names) {
     const loc = gl.getUniformLocation(program, name);
@@ -204,7 +278,46 @@ function collectUniforms(gl: WebGL2RenderingContext, program: WebGLProgram, pass
       uniforms.set(name, loc);
     }
   }
-  return uniforms;
+  return { uniforms, uniformTypes };
+}
+
+function validateAutoUniformTypes(gl: WebGL2RenderingContext, pass: PassDef, uniformTypes: Map<string, number>) {
+  const builtins: Array<[string, number]> = [
+    ["uTime", gl.FLOAT],
+    ["uDeltaTime", gl.FLOAT],
+    ["uFrame", gl.FLOAT],
+    ["uResolution", gl.FLOAT_VEC2],
+    ["uAspect", gl.FLOAT],
+    ["uTexelSize", gl.FLOAT_VEC2],
+    ["uCameraPos", gl.FLOAT_VEC3],
+    ["uCameraTarget", gl.FLOAT_VEC3],
+    ["uCameraUp", gl.FLOAT_VEC3],
+    ["uCameraFov", gl.FLOAT],
+  ];
+  for (const [name, expected] of builtins) {
+    const actual = uniformTypes.get(name);
+    if (actual !== undefined && actual !== expected) {
+      warnUniformType(gl, pass.id, name, expected, actual);
+    }
+  }
+  const hasExplicitUniform = (name: string) => Boolean(pass.uniforms && pass.uniforms[name]);
+  for (const [key, input] of Object.entries(pass.inputs ?? {})) {
+    const baseName = input.uniform ?? key;
+    const samplerType = uniformTypes.get(baseName);
+    if (samplerType !== undefined && samplerType !== gl.SAMPLER_2D) {
+      warnUniformType(gl, pass.id, baseName, gl.SAMPLER_2D, samplerType);
+    }
+    const sizeName = `${baseName}Size`;
+    const sizeType = uniformTypes.get(sizeName);
+    if (!hasExplicitUniform(sizeName) && sizeType !== undefined && sizeType !== gl.FLOAT_VEC2) {
+      warnUniformType(gl, pass.id, sizeName, gl.FLOAT_VEC2, sizeType);
+    }
+    const texelName = `${baseName}TexelSize`;
+    const texelType = uniformTypes.get(texelName);
+    if (!hasExplicitUniform(texelName) && texelType !== undefined && texelType !== gl.FLOAT_VEC2) {
+      warnUniformType(gl, pass.id, texelName, gl.FLOAT_VEC2, texelType);
+    }
+  }
 }
 
 function setUniform(gl: WebGL2RenderingContext, loc: WebGLUniformLocation, spec: UniformSpec) {
@@ -232,12 +345,26 @@ export class GraphRunner {
   private persistent = new Map<string, { textures: TextureResource[]; index: number }>();
   private frameIndex = 0;
   private lastTimeSec: number | null = null;
+  private debugEnabled: boolean;
+  private debugSnapshot: PassDebugInfo[] = [];
+  private camera: CameraUniforms = {
+    position: [0, 0, 3],
+    target: [0, 0, 0],
+    up: [0, 1, 0],
+    fov: Math.PI / 3,
+  };
 
-  constructor(gl: WebGL2RenderingContext, graph: Graph, assets: Record<string, AssetTexture> = {}) {
+  constructor(
+    gl: WebGL2RenderingContext,
+    graph: Graph,
+    assets: Record<string, AssetTexture> = {},
+    options: GraphRunnerOptions = {}
+  ) {
     this.gl = gl;
     this.graph = graph;
     this.assets = assets;
     this.allowFloat = Boolean(gl.getExtension("EXT_color_buffer_float"));
+    this.debugEnabled = options.debug ?? false;
     if (!this.allowFloat) {
       console.warn("EXT_color_buffer_float not available; falling back to RGBA8 textures.");
     }
@@ -250,9 +377,10 @@ export class GraphRunner {
 
     this.runtimePasses = graph.passes.map((pass) => {
       const program = createProgram(gl, VERTEX_SOURCE, pass.fragment);
-      const uniforms = collectUniforms(gl, program, pass);
+      const { uniforms, uniformTypes } = collectUniforms(gl, program, pass);
+      validateAutoUniformTypes(gl, pass, uniformTypes);
       const renderTarget = pass.outputs ? new RenderTarget(gl) : null;
-      return { pass, program, uniforms, renderTarget };
+      return { pass, program, uniforms, uniformTypes, renderTarget };
     });
     this.clearTarget = new RenderTarget(gl);
 
@@ -272,6 +400,18 @@ export class GraphRunner {
     this.gl.viewport(0, 0, width, height);
   }
 
+  setDebugEnabled(enabled: boolean) {
+    this.debugEnabled = enabled;
+  }
+
+  setCamera(camera: CameraUniforms) {
+    this.camera = camera;
+  }
+
+  getDebugSnapshot() {
+    return this.debugSnapshot;
+  }
+
   render(timeSec: number, width: number, height: number) {
     const gl = this.gl;
     const deltaTime = this.lastTimeSec !== null ? Math.max(0, timeSec - this.lastTimeSec) : 0;
@@ -286,6 +426,7 @@ export class GraphRunner {
     const texelSize = vec2.create();
     const inputSizeVec = vec2.create();
     const inputTexelVec = vec2.create();
+    const debug = this.debugEnabled ? [] as PassDebugInfo[] : null;
 
     for (const runtime of this.runtimePasses) {
       const pass = runtime.pass;
@@ -293,6 +434,7 @@ export class GraphRunner {
       const inputSizes: { width: number; height: number }[] = [];
       const inputSizeMap = new Map<string, { width: number; height: number }>();
       const prevTextures = new Map<string, TextureResource>();
+      const inputInfo: Record<string, DebugInputInfo> = {};
 
       for (const [key, input] of Object.entries(pass.inputs ?? {})) {
         const ref = input.source;
@@ -332,11 +474,13 @@ export class GraphRunner {
         inputTextures.push(resource);
         inputSizes.push({ width: resource.width, height: resource.height });
         inputSizeMap.set(key, { width: resource.width, height: resource.height });
+        inputInfo[key] = { source: ref, width: resource.width, height: resource.height };
       }
 
       const outputResources: TextureResource[] = [];
       let outWidth = width;
       let outHeight = height;
+      const outputInfo: Record<string, DebugOutputInfo> = {};
       if (pass.outputs) {
         const outputEntries = Object.entries(pass.outputs);
         let baseSize: { width: number; height: number } | null = null;
@@ -352,6 +496,13 @@ export class GraphRunner {
           outHeight = size.height;
           const format = resolveFormat(gl, desc.format, this.allowFloat);
           const key = `${pass.id}.${name}`;
+          outputInfo[name] = {
+            width: size.width,
+            height: size.height,
+            format: desc.format,
+            filter: desc.filter,
+            persistent: desc.persistent,
+          };
           if (desc.persistent) {
             persistentKeys.add(key);
             const persistent = this.ensurePersistent(key, desc, size.width, size.height, format);
@@ -375,26 +526,48 @@ export class GraphRunner {
       gl.useProgram(runtime.program);
       gl.bindVertexArray(this.vao);
 
-      if (runtime.uniforms.has("uTime")) {
-        gl.uniform1f(runtime.uniforms.get("uTime") as WebGLUniformLocation, timeSec);
+      const timeLoc = runtime.uniforms.get("uTime");
+      if (timeLoc && runtime.uniformTypes.get("uTime") === gl.FLOAT) {
+        gl.uniform1f(timeLoc, timeSec);
       }
-      if (runtime.uniforms.has("uDeltaTime")) {
-        gl.uniform1f(runtime.uniforms.get("uDeltaTime") as WebGLUniformLocation, deltaTime);
+      const deltaLoc = runtime.uniforms.get("uDeltaTime");
+      if (deltaLoc && runtime.uniformTypes.get("uDeltaTime") === gl.FLOAT) {
+        gl.uniform1f(deltaLoc, deltaTime);
       }
-      if (runtime.uniforms.has("uFrame")) {
-        gl.uniform1f(runtime.uniforms.get("uFrame") as WebGLUniformLocation, frame);
+      const frameLoc = runtime.uniforms.get("uFrame");
+      if (frameLoc && runtime.uniformTypes.get("uFrame") === gl.FLOAT) {
+        gl.uniform1f(frameLoc, frame);
+      }
+      const camPosLoc = runtime.uniforms.get("uCameraPos");
+      if (camPosLoc && runtime.uniformTypes.get("uCameraPos") === gl.FLOAT_VEC3) {
+        gl.uniform3fv(camPosLoc, this.camera.position);
+      }
+      const camTargetLoc = runtime.uniforms.get("uCameraTarget");
+      if (camTargetLoc && runtime.uniformTypes.get("uCameraTarget") === gl.FLOAT_VEC3) {
+        gl.uniform3fv(camTargetLoc, this.camera.target);
+      }
+      const camUpLoc = runtime.uniforms.get("uCameraUp");
+      if (camUpLoc && runtime.uniformTypes.get("uCameraUp") === gl.FLOAT_VEC3) {
+        gl.uniform3fv(camUpLoc, this.camera.up);
+      }
+      const camFovLoc = runtime.uniforms.get("uCameraFov");
+      if (camFovLoc && runtime.uniformTypes.get("uCameraFov") === gl.FLOAT) {
+        gl.uniform1f(camFovLoc, this.camera.fov);
       }
       vec2.set(resolution, outWidth, outHeight);
-      if (runtime.uniforms.has("uResolution")) {
-        gl.uniform2fv(runtime.uniforms.get("uResolution") as WebGLUniformLocation, resolution);
+      const resolutionLoc = runtime.uniforms.get("uResolution");
+      if (resolutionLoc && runtime.uniformTypes.get("uResolution") === gl.FLOAT_VEC2) {
+        gl.uniform2fv(resolutionLoc, resolution);
       }
-      if (runtime.uniforms.has("uAspect")) {
-        gl.uniform1f(runtime.uniforms.get("uAspect") as WebGLUniformLocation, outWidth / Math.max(1, outHeight));
+      const aspectLoc = runtime.uniforms.get("uAspect");
+      if (aspectLoc && runtime.uniformTypes.get("uAspect") === gl.FLOAT) {
+        gl.uniform1f(aspectLoc, outWidth / Math.max(1, outHeight));
       }
       const inputSize = inputSizes[0] ?? { width: outWidth, height: outHeight };
       vec2.set(texelSize, 1 / inputSize.width, 1 / inputSize.height);
-      if (runtime.uniforms.has("uTexelSize")) {
-        gl.uniform2fv(runtime.uniforms.get("uTexelSize") as WebGLUniformLocation, texelSize);
+      const texelLoc = runtime.uniforms.get("uTexelSize");
+      if (texelLoc && runtime.uniformTypes.get("uTexelSize") === gl.FLOAT_VEC2) {
+        gl.uniform2fv(texelLoc, texelSize);
       }
 
       if (pass.uniforms) {
@@ -435,16 +608,18 @@ export class GraphRunner {
           gl.bindTexture(gl.TEXTURE_2D, texture.texture);
           const uniformName = input.uniform ?? key;
           const loc = runtime.uniforms.get(uniformName);
-          if (loc) {
+          if (loc && runtime.uniformTypes.get(uniformName) === gl.SAMPLER_2D) {
             gl.uniform1i(loc, unit);
           }
-          const sizeLoc = runtime.uniforms.get(`${uniformName}Size`);
-          if (sizeLoc) {
+          const sizeName = `${uniformName}Size`;
+          const sizeLoc = runtime.uniforms.get(sizeName);
+          if (sizeLoc && runtime.uniformTypes.get(sizeName) === gl.FLOAT_VEC2) {
             vec2.set(inputSizeVec, texture.width, texture.height);
             gl.uniform2fv(sizeLoc, inputSizeVec);
           }
-          const texelLoc = runtime.uniforms.get(`${uniformName}TexelSize`);
-          if (texelLoc) {
+          const texelName = `${uniformName}TexelSize`;
+          const texelLoc = runtime.uniforms.get(texelName);
+          if (texelLoc && runtime.uniformTypes.get(texelName) === gl.FLOAT_VEC2) {
             vec2.set(inputTexelVec, 1 / texture.width, 1 / texture.height);
             gl.uniform2fv(texelLoc, inputTexelVec);
           }
@@ -485,6 +660,15 @@ export class GraphRunner {
           }
         }
       }
+
+      if (debug) {
+        debug.push({
+          id: pass.id,
+          inputs: inputInfo,
+          outputs: outputInfo,
+          renderSize: { width: outWidth, height: outHeight },
+        });
+      }
     }
 
     const finalTexture = outputs.get(outputKey);
@@ -509,6 +693,9 @@ export class GraphRunner {
     for (const [key, resource] of outputs.entries()) {
       if (persistentKeys.has(key)) continue;
       this.pool.release(resource);
+    }
+    if (debug) {
+      this.debugSnapshot = debug;
     }
   }
 

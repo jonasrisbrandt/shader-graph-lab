@@ -14,3 +14,38 @@ float noise2(vec2 p) {
   float d = hash12(i + vec2(1.0, 1.0));
   return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
+
+float noise_fbm(vec2 p) {
+  float sum = 0.0;
+  float amp = 0.5;
+  for (int i = 0; i < 5; i++) {
+    sum += amp * noise2(p);
+    p = p * 2.0 + vec2(17.0, 11.0);
+    amp *= 0.5;
+  }
+  return sum;
+}
+
+float noise_turbulence(vec2 p) {
+  float sum = 0.0;
+  float amp = 0.5;
+  for (int i = 0; i < 5; i++) {
+    float n = abs(2.0 * noise2(p) - 1.0);
+    sum += n * amp;
+    p = p * 2.0 + vec2(23.0, 19.0);
+    amp *= 0.5;
+  }
+  return sum;
+}
+
+float noise_ridged(vec2 p) {
+  float sum = 0.0;
+  float amp = 0.5;
+  for (int i = 0; i < 5; i++) {
+    float n = 1.0 - abs(2.0 * noise2(p) - 1.0);
+    sum += n * n * amp;
+    p = p * 2.0 + vec2(31.0, 27.0);
+    amp *= 0.5;
+  }
+  return sum;
+}

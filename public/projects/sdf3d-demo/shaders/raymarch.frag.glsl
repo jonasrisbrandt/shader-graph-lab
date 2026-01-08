@@ -3,12 +3,17 @@ precision highp float;
 in vec2 vUv;
 uniform float uTime;
 uniform vec2 uResolution;
+uniform vec3 uCameraPos;
+uniform vec3 uCameraTarget;
+uniform vec3 uCameraUp;
+uniform float uCameraFov;
 uniform vec3 uLightDir;
 uniform float uShadow;
 uniform float uAo;
 out vec4 outColor;
 
 #include "../../common/shaders/sdf3d.glsl"
+#include "../../common/shaders/sdf3d_camera.glsl"
 
 float mapSdf(vec3 p) {
   vec3 q = p;
@@ -53,10 +58,8 @@ float ambientOcclusion(vec3 p, vec3 n) {
 }
 
 void main() {
-  vec2 uv = (vUv * 2.0 - 1.0);
-  uv.x *= uResolution.x / uResolution.y;
-  vec3 ro = vec3(0.0, 0.0, 3.0);
-  vec3 rd = normalize(vec3(uv, -1.6));
+  vec3 ro = uCameraPos;
+  vec3 rd = sdf3d_camera_ray(vUv, uResolution, uCameraPos, uCameraTarget, uCameraUp, uCameraFov);
 
   float t = 0.0;
   float d = 0.0;
