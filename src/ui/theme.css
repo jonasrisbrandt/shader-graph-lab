@@ -34,3 +34,33 @@
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
   overflow: hidden;
 }
+
+.sgl-gui.root > .title {
+  display: none;
+}
+
+.sgl-gui.root > .children {
+  border-top: 0;
+}
+
+.sgl-gui.root > .children > .lil-gui > .title,
+.sgl-gui.root > .children > .lil-gui.closed > .title {
+  border: none;
+}
+
+.sgl-gui .lil-gui + .controller {
+  border-top: none;
+}
+
+.sgl-gui .lil-gui .lil-gui > .children {
+  border-left: 0;
+  margin-left: 0;
+}
+
+.sgl-gui.root > .children > .lil-gui {
+  margin-top: 8px;
+}
+
+.sgl-gui.root > .children > .lil-gui:first-child {
+  margin-top: 0;
+}

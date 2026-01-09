@@ -245,3 +245,15 @@
 
 ## Update 2026-01-09
 - Added `src/ui/reset.css` to normalize box sizing and default form typography; base styles now focus on layout + theme tokens.
+
+## Update 2026-01-09
+- Added `docs/architecture-ui.md` to capture UI decisions and layout/system notes.
+
+## Update 2026-01-09
+- Wrapped uniforms UI in a collapsible parent folder ("Controls") and removed the extra root title bar styling.
+
+## Update 2026-01-09
+- Removed lil-gui header divider lines to match the new panel styling.
+
+## Update 2026-01-09
+- Removed lil-gui nested group left borders and added extra spacing between groups.

@@ -47,6 +47,8 @@ export function createUniformUI(graph: Graph, options?: { container?: HTMLElemen
     gui.domElement.style.zIndex = "10";
   }
   gui.domElement.classList.add("sgl-gui");
+  const rootFolder = gui.addFolder("Controls");
+  rootFolder.open();
   const folders = new Map<string, GUI>();
   const groupMeta = graph.uiGroups ?? {};
 
@@ -54,16 +56,8 @@ export function createUniformUI(graph: Graph, options?: { container?: HTMLElemen
     if (!pass.uniforms) continue;
     for (const [name, spec] of Object.entries(pass.uniforms)) {
       if (spec.ui?.show === false) continue;
-      const group = spec.ui?.group ?? pass.id;
-      let folder = folders.get(group);
-      if (!folder) {
-        const label = groupMeta[group]?.label ?? group;
-        folder = gui.addFolder(label);
-        if (groupMeta[group]?.collapsed) {
-          folder.close();
-        }
-        folders.set(group, folder);
-      }
+      const group = spec.ui?.group;
+      const folder = group ? getGroupFolder(group, groupMeta, folders, rootFolder) : rootFolder;
       const label = spec.ui?.label ?? name;
       if (spec.type === "f1") {
         addScalar(folder, label, spec);
@@ -79,12 +73,32 @@ export function createUniformUI(graph: Graph, options?: { container?: HTMLElemen
       order: typeof meta.order === "number" ? meta.order : Number.POSITIVE_INFINITY,
     }))
     .sort((a, b) => a.order - b.order);
+  const rootChildren = rootFolder.domElement.querySelector(".children");
   for (const { group } of orderedGroups) {
     const folder = folders.get(group);
-    if (folder && (folder as unknown as { domElement?: HTMLElement }).domElement) {
-      gui.domElement.appendChild((folder as unknown as { domElement: HTMLElement }).domElement);
+    const element = folder ? (folder as unknown as { domElement?: HTMLElement }).domElement : null;
+    if (element && rootChildren) {
+      rootChildren.appendChild(element);
     }
   }
 
   return gui;
+}
+
+function getGroupFolder(
+  group: string,
+  meta: Record<string, { label?: string; order?: number; collapsed?: boolean }>,
+  folders: Map<string, GUI>,
+  parent: GUI
+) {
+  let folder = folders.get(group);
+  if (!folder) {
+    const label = meta[group]?.label ?? group;
+    folder = parent.addFolder(label);
+    if (meta[group]?.collapsed) {
+      folder.close();
+    }
+    folders.set(group, folder);
+  }
+  return folder;
 }
