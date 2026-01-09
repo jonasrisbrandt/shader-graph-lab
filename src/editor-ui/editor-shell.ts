@@ -12,6 +12,7 @@ type EditorShellCallbacks = {
   onSelectTab: (path: string) => void;
   onContentChange: (path: string, content: string) => void;
   onSave: () => void;
+  onClose: () => void;
 };
 
 export class EditorShell {
@@ -27,6 +28,7 @@ export class EditorShell {
   private body: HTMLDivElement;
   private sidebarStorageKey = "sgl:editorSidebar";
   private saveButton: HTMLButtonElement;
+  private closeButton: HTMLButtonElement;
   private files: string[] = [];
   private tabs: string[] = [];
   private activeFile: string | null = null;
@@ -56,6 +58,9 @@ export class EditorShell {
     headerText.style.flexDirection = "column";
     headerText.style.gap = "4px";
     headerText.append(this.headerTitle, this.headerMeta);
+    const headerActions = document.createElement("div");
+    headerActions.style.display = "flex";
+    headerActions.style.gap = "8px";
     this.saveButton = document.createElement("button");
     this.saveButton.type = "button";
     this.saveButton.textContent = "Save";
@@ -63,7 +68,16 @@ export class EditorShell {
     this.saveButton.addEventListener("click", () => {
       this.callbacks.onSave();
     });
-    headerRow.append(headerText, this.saveButton);
+    this.closeButton = document.createElement("button");
+    this.closeButton.type = "button";
+    this.closeButton.textContent = "Close";
+    this.closeButton.className = "editor-tab";
+    this.closeButton.title = "Close editor";
+    this.closeButton.addEventListener("click", () => {
+      this.callbacks.onClose();
+    });
+    headerActions.append(this.saveButton, this.closeButton);
+    headerRow.append(headerText, headerActions);
     header.append(headerRow);
 
     const body = document.createElement("div");
@@ -174,6 +188,11 @@ export class EditorShell {
     this.editor.setContent("");
     this.editor.setPlaceholder(message);
     this.status.textContent = message;
+  }
+
+  dispose() {
+    this.editor.destroy();
+    this.root.innerHTML = "";
   }
 
   private renderFiles() {

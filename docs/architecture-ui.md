@@ -13,6 +13,7 @@
 
 ## Editor vs Render
 - `?edit=1` enables split view (editor left, render right).
+- Render-only mode shows a floating "Edit" button; the editor can be closed without changing the project.
 - Editor loads files via `ProjectStore` and writes to IndexedDB.
 - Saving updates `?project=local:<id>` and triggers a render reload.
 - Render loads project JSON + includes through a resolver that reads from ProjectStore.

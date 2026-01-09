@@ -6,6 +6,7 @@ type EditorSessionOptions = {
   projectId: string;
   store: ProjectStore;
   onSaveProject?: (projectId: string) => void;
+  onClose?: () => void;
 };
 
 export class EditorSession {
@@ -13,6 +14,7 @@ export class EditorSession {
   private projectId: string;
   private shell: EditorShell;
   private onSaveProject?: (projectId: string) => void;
+  private onClose?: () => void;
   private keyHandler: (event: KeyboardEvent) => void;
   private files: string[] = [];
   private tabs: string[] = [];
@@ -24,6 +26,7 @@ export class EditorSession {
     this.store = options.store;
     this.projectId = options.projectId;
     this.onSaveProject = options.onSaveProject;
+    this.onClose = options.onClose;
     this.keyHandler = (event) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
         event.preventDefault();
@@ -37,6 +40,7 @@ export class EditorSession {
       onSelectTab: (path) => this.openFile(path),
       onContentChange: (path, content) => this.updateContent(path, content),
       onSave: () => this.saveActiveFile(),
+      onClose: () => this.onClose?.(),
     });
   }
 
@@ -119,5 +123,10 @@ export class EditorSession {
     this.dirtyFiles.delete(this.activeFile);
     this.shell.setDirtyFiles(this.dirtyFiles);
     this.onSaveProject?.(this.projectId);
+  }
+
+  dispose() {
+    window.removeEventListener("keydown", this.keyHandler);
+    this.shell.dispose();
   }
 }

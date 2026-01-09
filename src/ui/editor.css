@@ -26,17 +26,49 @@ body.is-editing #app-resizer {
   position: relative;
 }
 
-#editor-root {
+#edit-toggle {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 12;
+  background: var(--ui-panel-alt);
+  color: var(--ui-text);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  padding: 6px 10px;
+  font: 12px/1.4 var(--ui-font-mono);
+  cursor: pointer;
+}
+
+#edit-toggle:hover,
+.editor-tab:hover {
+  border-color: var(--ui-accent);
+}
+
+body.is-editing #edit-toggle {
   display: none;
+}
+
+#editor-root {
   order: 1;
-  flex: 1 1 50%;
+  flex: 0 0 0;
+  width: 0;
+  overflow: hidden;
   background: var(--ui-panel);
   border-right: 1px solid var(--ui-border);
   color: var(--ui-text);
+  transition: transform 180ms ease, opacity 180ms ease;
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 body.is-editing #editor-root {
-  display: block;
+  flex: 1 1 50%;
+  width: auto;
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .editor-shell {

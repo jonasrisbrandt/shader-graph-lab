@@ -7,7 +7,12 @@ type AppResizerOptions = {
   storageKey?: string;
 };
 
-export function setupAppResizer(options: AppResizerOptions) {
+export type AppResizerControl = {
+  applyStoredWidth: () => void;
+  collapse: () => void;
+};
+
+export function setupAppResizer(options: AppResizerOptions): AppResizerControl {
   const minWidth = options.minWidth ?? 320;
   const storageKey = options.storageKey ?? "sgl:editorSplit";
   let isDragging = false;
@@ -72,4 +77,12 @@ export function setupAppResizer(options: AppResizerOptions) {
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
   });
+
+  return {
+    applyStoredWidth: loadStoredWidth,
+    collapse: () => {
+      options.editorRoot.style.flex = "0 0 0px";
+      options.renderRoot.style.flex = "1 1 0";
+    },
+  };
 }

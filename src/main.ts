@@ -60,30 +60,24 @@ async function start() {
   debugEnabled = debugParam === "1" || debugParam === "true";
   debugOverlay.setVisible(debugEnabled);
   const editEnabled = editParam === "1" || editParam === "true";
-  if (editEnabled) {
-    document.body.classList.add("is-editing");
-  } else {
-    document.body.classList.remove("is-editing");
-  }
   let currentProjectId = projectParam;
-  const needsStore = editEnabled || isLocalProjectId(projectParam);
-  const store = needsStore ? new CompositeProjectStore(new PublicProjectStore(), new IdbProjectStore()) : null;
-
-  cameraController?.dispose();
-  if (cameraParam === "static") {
-    cameraController = new StaticCameraController({
-      position: [0, 0, 3],
-      target: [0, 0, 0],
-      up: [0, 1, 0],
-      fov: Math.PI / 3,
-    });
-  } else {
-    cameraController = new OrbitCameraController(canvas, {
-      target: [0, 0, 0],
-      radius: 3,
-      fov: Math.PI / 3,
-    });
-  }
+  const store = new CompositeProjectStore(new PublicProjectStore(), new IdbProjectStore());
+  const editorRoot = document.getElementById("editor-root");
+  const renderRoot = document.getElementById("render-root");
+  const appRoot = document.getElementById("app");
+  const appResizer = document.getElementById("app-resizer");
+  const editToggle = document.getElementById("edit-toggle") as HTMLButtonElement | null;
+  const resizerControl =
+    editorRoot && renderRoot && appRoot && appResizer
+      ? setupAppResizer({
+          app: appRoot,
+          resizer: appResizer,
+          editorRoot,
+          renderRoot,
+          minWidth: 320,
+          storageKey: "sgl:editorSplit",
+        })
+      : null;
 
   const isProjectUrl = (value: string) => value.includes("/") || value.endsWith(".json");
   const projectUrlFor = (projectId: string) => {
@@ -125,44 +119,80 @@ async function start() {
     runner = new GraphRunner(gl, graph, assets, { debug: debugEnabled, glErrors: debugEnabled });
   };
 
-  if (editEnabled) {
-    const editorRoot = document.getElementById("editor-root");
-    const renderRoot = document.getElementById("render-root");
-    const appRoot = document.getElementById("app");
-    const appResizer = document.getElementById("app-resizer");
-    if (editorRoot && renderRoot && appRoot && appResizer) {
-      setupAppResizer({
-        app: appRoot,
-        resizer: appResizer,
-        editorRoot,
-        renderRoot,
-        minWidth: 320,
-        storageKey: "sgl:editorSplit",
-      });
+  const setEditMode = (enabled: boolean) => {
+    document.body.classList.toggle("is-editing", enabled);
+    const url = new URL(window.location.href);
+    if (enabled) {
+      url.searchParams.set("edit", "1");
+    } else {
+      url.searchParams.delete("edit");
     }
-    if (editorRoot && store) {
-      if (projectParam.includes("/") || projectParam.endsWith(".json")) {
-        editorRoot.textContent = "Edit mode supports project ids only (no direct URLs).";
-      } else {
-        const session = new EditorSession({
-          root: editorRoot,
-          projectId: projectParam,
-          store,
-          onSaveProject: (nextProjectId) => {
-            loadProjectForRender(nextProjectId).catch((error) => {
-              console.error(error);
-              errorOverlay.show(error);
-            });
-          },
-        });
-        session.init().catch((error) => {
-          console.error(error);
-          errorOverlay.show(error);
-        });
-        editorSession = session;
+    window.history.replaceState({}, "", url);
+    if (enabled) {
+      resizerControl?.applyStoredWidth();
+      if (editorRoot) {
+        const flexValue = editorRoot.style.flex;
+        if (!flexValue || flexValue === "0 0 0px" || flexValue === "0 0 0") {
+          editorRoot.style.flex = "";
+          editorRoot.style.width = "";
+        }
+        if (isProjectUrl(currentProjectId)) {
+          editorRoot.textContent = "Edit mode supports project ids only (no direct URLs).";
+        } else if (!editorSession) {
+          const session = new EditorSession({
+            root: editorRoot,
+            projectId: currentProjectId,
+            store,
+            onSaveProject: (nextProjectId) => {
+              loadProjectForRender(nextProjectId).catch((error) => {
+                console.error(error);
+                errorOverlay.show(error);
+              });
+            },
+            onClose: () => setEditMode(false),
+          });
+          session.init().catch((error) => {
+            console.error(error);
+            errorOverlay.show(error);
+          });
+          editorSession = session;
+        }
+      }
+    } else {
+      resizerControl?.collapse();
+      if (editorSession) {
+        editorSession.dispose();
+        editorSession = null;
+      }
+      if (editorRoot) {
+        editorRoot.textContent = "";
       }
     }
+  };
+
+  editToggle?.addEventListener("click", () => {
+    setEditMode(true);
+  });
+
+  setEditMode(editEnabled);
+
+  cameraController?.dispose();
+  if (cameraParam === "static") {
+    cameraController = new StaticCameraController({
+      position: [0, 0, 3],
+      target: [0, 0, 0],
+      up: [0, 1, 0],
+      fov: Math.PI / 3,
+    });
+  } else {
+    cameraController = new OrbitCameraController(canvas, {
+      target: [0, 0, 0],
+      radius: 3,
+      fov: Math.PI / 3,
+    });
   }
+
+  
 
   await loadProjectForRender(currentProjectId);
   let lastFrameMs = 0;

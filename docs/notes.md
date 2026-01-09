@@ -257,3 +257,9 @@
 
 ## Update 2026-01-09
 - Removed lil-gui nested group left borders and added extra spacing between groups.
+
+## Update 2026-01-09
+- Added render-only edit toggle button and editor close button; edit panel now slides in from the left.
+
+## Update 2026-01-09
+- Matched hover styling for editor header buttons with the render edit toggle.
