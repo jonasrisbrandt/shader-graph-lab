@@ -144,4 +144,7 @@
 - Added component instance uniform overrides (passId -> uniform override) and switched metaballs bloom/tonemap defaults to use it.
 
 ## Update 2026-01-09
+- Removed legacy `src/scenes/*` and added `docs/programmatic-api.md` to document programmatic usage.
+
+## Update 2026-01-09
 - Added ui.group/ui.label defaults to common bloom and tonemap components.

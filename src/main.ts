@@ -1,10 +1,5 @@
 import { GraphRunner } from "./render/runtime";
 import { loadProjectAssets } from "./render/assets";
-import { buildCircleBloomGraph } from "./scenes/circle";
-import { buildGradientGraph } from "./scenes/gradient";
-import { buildInputSizedGraph } from "./scenes/input-sized";
-import { buildPlasmaBloomGraph } from "./scenes/plasma";
-import { buildSolidGraph } from "./scenes/solid";
 import { buildGraphFromProject, loadProject } from "./render/project";
 import { OrbitCameraController, StaticCameraController } from "./ui/camera";
 import { createDebugOverlay } from "./ui/debug-overlay";
@@ -38,9 +33,8 @@ resizeCanvas(outputScale);
 
 async function start() {
   const params = new URLSearchParams(window.location.search);
-  const projectParam = params.get("project");
+  const projectParam = params.get("project") ?? "metaballs-light";
   const graphName = params.get("graph") ?? "main";
-  const scene = params.get("scene") ?? "plasma";
   const scaleParam = params.get("scale");
   const debugParam = params.get("debug");
   const cameraParam = params.get("camera") ?? "orbit";
@@ -65,65 +59,15 @@ async function start() {
     });
   }
 
-  const projectUrl = projectParam
-    ? projectParam.includes("/") || projectParam.endsWith(".json")
-      ? projectParam
-      : `/projects/${projectParam}/project.json`
-    : null;
+  const projectUrl = projectParam.includes("/") || projectParam.endsWith(".json")
+    ? projectParam
+    : `/projects/${projectParam}/project.json`;
 
-  if (projectUrl) {
-    const project = await loadProject(projectUrl);
-    const assets = await loadProjectAssets(gl, project);
-    const graph = buildGraphFromProject(project, graphName);
-    createUniformUI(graph);
-    runner = new GraphRunner(gl, graph, assets, { debug: debugEnabled });
-    let lastFrameMs = 0;
-    let fps = 0;
-    function frame(time: number) {
-      try {
-        resizeCanvas(outputScale);
-        if (runner) {
-          const delta = lastFrameMs > 0 ? time - lastFrameMs : 0;
-          lastFrameMs = time;
-          const deltaSec = delta / 1000;
-          cameraController?.update(deltaSec);
-          if (cameraController) {
-            runner.setCamera(cameraController.getState());
-          }
-          runner.render(time * 0.001, canvas.width, canvas.height);
-          const instantFps = delta > 0 ? 1000 / delta : 0;
-          fps = fps === 0 ? instantFps : fps * 0.9 + instantFps * 0.1;
-          debugOverlay.update(runner.getDebugSnapshot(), {
-            fps,
-            width: canvas.width,
-            height: canvas.height,
-            scale: outputScale,
-          });
-        }
-        requestAnimationFrame(frame);
-      } catch (error) {
-        console.error(error);
-        errorOverlay.show(error);
-      }
-    }
-    requestAnimationFrame(frame);
-    return;
-  }
-
-  const graph =
-    scene === "circle"
-      ? buildCircleBloomGraph()
-      : scene === "solid"
-      ? buildSolidGraph()
-      : scene === "gradient"
-        ? buildGradientGraph()
-        : scene === "input"
-          ? buildInputSizedGraph()
-          : buildPlasmaBloomGraph();
-
+  const project = await loadProject(projectUrl);
+  const assets = await loadProjectAssets(gl, project);
+  const graph = buildGraphFromProject(project, graphName);
   createUniformUI(graph);
-
-  runner = new GraphRunner(gl, graph, {}, { debug: debugEnabled });
+  runner = new GraphRunner(gl, graph, assets, { debug: debugEnabled });
   let lastFrameMs = 0;
   let fps = 0;
 
