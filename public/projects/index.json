@@ -53,6 +53,20 @@
       ]
     },
     {
+      "id": "menger-sponge",
+      "name": "Menger Sponge",
+      "files": [
+        "project.json"
+      ]
+    },
+    {
+      "id": "menger-sponge-basic",
+      "name": "Menger Sponge Basic",
+      "files": [
+        "project.json"
+      ]
+    },
+    {
       "id": "metaballs-light",
       "name": "Metaballs Light",
       "files": [

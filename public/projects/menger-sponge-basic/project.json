@@ -1,0 +1,27 @@
+{
+  "shaders": {
+    "menger": { "$include": "../common/components/menger/shaders/menger.frag.glsl" }
+  },
+  "components": {
+    "menger": { "$include": "../common/components/menger/component.json" }
+  },
+  "graphs": {
+    "main": {
+      "uiGroups": {
+        "Fractal": { "order": 1 },
+        "Raymarch": { "order": 2 },
+        "Lighting": { "order": 3 },
+        "Shadow": { "order": 4 },
+        "Material": { "order": 5 }
+      },
+      "components": [
+        {
+          "id": "menger",
+          "component": "menger",
+          "bindings": {}
+        }
+      ],
+      "output": "menger.color"
+    }
+  }
+}

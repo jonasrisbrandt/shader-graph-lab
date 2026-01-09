@@ -1,0 +1,86 @@
+{
+  "assets": {
+    "identity": {
+      "type": "image",
+      "url": "../common/luts/identity-16.svg",
+      "filter": "linear",
+      "lutSize": 16
+    }
+  },
+  "shaders": {
+    "menger": { "$include": "../common/components/menger/shaders/menger.frag.glsl" },
+    "combine": { "$include": "../circle-bloom/shaders/combine.frag.glsl" },
+    "threshold": { "$include": "../common/components/bloom/shaders/threshold.frag.glsl" },
+    "downsample": { "$include": "../common/components/bloom/shaders/downsample.frag.glsl" },
+    "blur": { "$include": "../common/components/bloom/shaders/blur.frag.glsl" },
+    "bloomCombine": { "$include": "../common/components/bloom/shaders/bloom-combine.frag.glsl" },
+    "tonemap": { "$include": "../common/components/tonemap/shaders/tonemap.frag.glsl" }
+  },
+  "components": {
+    "menger": { "$include": "../common/components/menger/component.json" },
+    "bloom": { "$include": "../common/components/bloom/component.json" },
+    "tonemap": { "$include": "../common/components/tonemap/component.json" }
+  },
+  "graphs": {
+    "main": {
+      "uiGroups": {
+        "Fractal": { "order": 1 },
+        "Raymarch": { "order": 2 },
+        "Lighting": { "order": 3 },
+        "Shadow": { "order": 4 },
+        "Material": { "order": 5 },
+        "bloom": { "label": "Bloom", "order": 6 },
+        "tonemap": { "label": "Tonemap", "order": 7 }
+      },
+      "passes": [
+        {
+          "id": "combine",
+          "fragment": { "$ref": "shader.combine" },
+          "inputs": {
+            "uBase": { "source": "menger.color" },
+            "uBloom": { "source": "bloom.out" }
+          },
+          "outputs": {
+            "out": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" }
+          },
+          "uniforms": {
+            "uIntensity": { "type": "f1", "value": 3.0, "min": 0, "max": 4, "step": 0.01, "ui": { "group": "bloom", "label": "Bloom Intensity" } }
+          }
+        }
+      ],
+      "components": [
+        {
+          "id": "menger",
+          "component": "menger",
+          "bindings": {}
+        },
+        {
+          "id": "bloom",
+          "component": "bloom",
+          "bindings": { "src": "menger.color" },
+          "uniforms": {
+            "threshold": {
+              "uThreshold": { "value": 0.84, "ui": { "group": "bloom", "label": "Threshold" } }
+            },
+            "combine": {
+              "uBloomWeights": { "value": [3, 3, 3], "ui": { "group": "bloom", "label": "Bloom Weights" } }
+            }
+          }
+        },
+        {
+          "id": "tonemap",
+          "component": "tonemap",
+          "bindings": { "src": "combine.out", "lut": "$asset.identity" },
+          "uniforms": {
+            "tonemap": {
+              "uExposure": { "value": 1.0, "ui": { "group": "tonemap", "label": "Exposure" } },
+              "uGamma": { "value": 1.2, "ui": { "group": "tonemap", "label": "Gamma" } },
+              "uUseLut": { "value": 1, "ui": { "group": "tonemap", "label": "Use LUT" } }
+            }
+          }
+        }
+      ],
+      "output": "tonemap.out"
+    }
+  }
+}

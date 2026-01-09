@@ -830,6 +830,7 @@ export function buildGraphFromProject(project: Project, graphName: string) {
 
   const builder = new GraphBuilder();
   const componentOutputs = new Map<string, string>();
+  const componentInstances: Array<{ instance: ComponentInstanceSource; component: ReturnType<typeof instantiateComponent> }> = [];
 
   const applyAssetUniforms = (pass: PassDef): PassDef => {
     let lutSize: number | null = null;
@@ -872,14 +873,19 @@ export function buildGraphFromProject(project: Project, graphName: string) {
       throw new Error(`Component "${instance.component}" not found in project.`);
     }
     const component = instantiateComponent(spec, instance.id, instance.bindings, instance.uniforms);
-    const updatedPasses = component.passes.map((pass) => {
-      validateAssetRefs(pass);
-      return applyAssetUniforms(pass);
-    });
-    builder.addComponent({ passes: updatedPasses });
+    componentInstances.push({ instance, component });
     for (const [name, ref] of Object.entries(component.outputs)) {
       componentOutputs.set(`${instance.id}.${name}`, ref);
     }
+  }
+
+  for (const entry of componentInstances) {
+    const updatedPasses = entry.component.passes.map((pass) => {
+      const resolved = resolveGraphPassInputs(pass, componentOutputs);
+      validateAssetRefs(resolved);
+      return applyAssetUniforms(resolved);
+    });
+    builder.addComponent({ passes: updatedPasses });
   }
 
   for (const pass of graph.passes ?? []) {

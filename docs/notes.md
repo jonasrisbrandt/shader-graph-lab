@@ -269,3 +269,27 @@
 - Project switcher now refreshes the project list after first save to include the new local copy.
 - Simplified editor header to only show the project dropdown + origin badge (removed the extra project title/meta header).
 - Project dropdown labels now include origin (public/local) to avoid duplicate-looking entries.
+- Added a new `menger-sponge` project with Menger SDF raymarching, lighting, AO, and soft shadows.
+- Menger sponge defaults adjusted for a static, axis-aligned cube (higher iteration count, scale 1.0, no rotation).
+
+## Update 2026-01-09
+- Updated `menger-sponge` to match the IQ Menger sponge SDF (bounding box march + orbit camera) while keeping the shared shadow/lighting chunks.
+- Removed the unused floor controls from the Menger project and clamped the iteration default to 4 to match the reference.
+
+## Update 2026-01-09
+- Switched `menger-sponge` back to the shared orbit camera uniforms and added a stronger shadow bias/minT to reduce shadow acne.
+
+## Update 2026-01-09
+- Added bloom + tonemap components to `menger-sponge`, with a combine pass and LUT-backed tonemapping.
+
+## Update 2026-01-09
+- Added `menger-sponge-basic` as a non-post FX variant (no bloom/tonemap passes).
+
+## Update 2026-01-09
+- Refactored Menger into a shared component under `public/projects/common/components/menger`, used by both Menger projects.
+
+## Update 2026-01-09
+- Resolved component inputs against component outputs during graph build to allow wiring components together (fixes Menger -> Bloom binding).
+
+## Update 2026-01-09
+- Added a NaN/inf color sanitize step in the Menger shader to prevent black tiles from invalid outputs.
