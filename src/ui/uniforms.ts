@@ -38,8 +38,14 @@ function addVector(gui: GUI, label: string, spec: UniformSpec) {
   });
 }
 
-export function createUniformUI(graph: Graph) {
-  const gui = new GUI({ title: "Uniforms" });
+export function createUniformUI(graph: Graph, options?: { container?: HTMLElement }) {
+  const gui = new GUI({ title: "Uniforms", container: options?.container });
+  if (options?.container) {
+    gui.domElement.style.position = "absolute";
+    gui.domElement.style.top = "12px";
+    gui.domElement.style.right = "12px";
+    gui.domElement.style.zIndex = "10";
+  }
   const folders = new Map<string, GUI>();
   const groupMeta = graph.uiGroups ?? {};
 

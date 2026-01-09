@@ -1,0 +1,89 @@
+{
+  "projects": [
+    {
+      "id": "chunk-gallery",
+      "name": "Chunk Gallery",
+      "files": [
+        "project.json",
+        "shaders/composite.frag.glsl",
+        "shaders/demo-blend.frag.glsl",
+        "shaders/demo-color.frag.glsl",
+        "shaders/demo-coords.frag.glsl",
+        "shaders/demo-math.frag.glsl",
+        "shaders/demo-noise.frag.glsl",
+        "shaders/demo-post.frag.glsl",
+        "shaders/demo-sdf2d.frag.glsl",
+        "shaders/demo-sdf3d.frag.glsl"
+      ]
+    },
+    {
+      "id": "circle-bloom",
+      "name": "Circle Bloom",
+      "files": [
+        "project.json",
+        "shaders/circle.frag.glsl",
+        "shaders/combine.frag.glsl"
+      ]
+    },
+    {
+      "id": "feedback-trails",
+      "name": "Feedback Trails",
+      "files": [
+        "project.json",
+        "shaders/feedback-base.frag.glsl",
+        "shaders/feedback.frag.glsl"
+      ]
+    },
+    {
+      "id": "input-sized",
+      "name": "Input Sized",
+      "files": [
+        "project.json",
+        "shaders/composite.frag.glsl",
+        "shaders/grid.frag.glsl"
+      ]
+    },
+    {
+      "id": "mandelbrot-zoom",
+      "name": "Mandelbrot Zoom",
+      "files": [
+        "project.json",
+        "shaders/mandelbrot.frag.glsl",
+        "shaders/resolve.frag.glsl"
+      ]
+    },
+    {
+      "id": "metaballs-light",
+      "name": "Metaballs Light",
+      "files": [
+        "project.json",
+        "shaders/metaballs.frag.glsl"
+      ]
+    },
+    {
+      "id": "noise-stack",
+      "name": "Noise Stack",
+      "files": [
+        "project.json",
+        "shaders/noise-combine.frag.glsl",
+        "shaders/noise-layer.frag.glsl"
+      ]
+    },
+    {
+      "id": "sdf3d-demo",
+      "name": "SDF3D Demo",
+      "files": [
+        "project.json",
+        "shaders/raymarch.frag.glsl"
+      ]
+    },
+    {
+      "id": "texture-input",
+      "name": "Texture Input",
+      "files": [
+        "project.json",
+        "shaders/sample.frag.glsl"
+      ]
+    }
+  ]
+}

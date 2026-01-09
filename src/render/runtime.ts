@@ -45,6 +45,7 @@ export type PassDebugInfo = {
 
 export type GraphRunnerOptions = {
   debug?: boolean;
+  glErrors?: boolean;
 };
 
 export type CameraUniforms = {
@@ -135,6 +136,35 @@ class RenderTarget {
   }
 }
 
+function extractSourceMap(source: string) {
+  const map = new Map<number, string>();
+  const lines = source.split("\n");
+  for (const line of lines) {
+    const match = line.match(/^\/\/\s*@source\s+(\d+)\s+(.*)$/);
+    if (!match) continue;
+    const id = Number.parseInt(match[1], 10);
+    if (Number.isNaN(id)) continue;
+    map.set(id, match[2]);
+  }
+  return map;
+}
+
+function mapShaderInfoLog(infoLog: string, source: string) {
+  const sourceMap = extractSourceMap(source);
+  const lines = infoLog.split("\n").filter((line) => line.trim().length > 0);
+  const mapped = lines.map((line) => {
+    const match = line.match(/^(ERROR|WARNING):\s*(\d+):(\d+):\s*(.*)$/);
+    if (!match) return line;
+    const sourceId = Number.parseInt(match[2], 10);
+    const lineNumber = match[3];
+    const message = match[4];
+    const url = sourceMap.get(sourceId);
+    if (!url) return line;
+    return `${match[1]}: ${url}:${lineNumber}: ${message}`;
+  });
+  return mapped.join("\n");
+}
+
 function compileShader(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader {
   const shader = gl.createShader(type);
   if (!shader) {
@@ -143,7 +173,8 @@ function compileShader(gl: WebGL2RenderingContext, type: number, source: string)
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    throw new Error(gl.getShaderInfoLog(shader) ?? "Unknown shader error.");
+    const infoLog = gl.getShaderInfoLog(shader) ?? "Unknown shader error.";
+    throw new Error(mapShaderInfoLog(infoLog, source));
   }
   return shader;
 }
@@ -229,6 +260,28 @@ function formatUniformType(gl: WebGL2RenderingContext, type: number) {
   if (type === gl.FLOAT_VEC4) return "vec4";
   if (type === gl.SAMPLER_2D) return "sampler2D";
   return `0x${type.toString(16)}`;
+}
+
+function formatGlError(gl: WebGL2RenderingContext, error: number) {
+  if (error === gl.INVALID_ENUM) return "GL_INVALID_ENUM";
+  if (error === gl.INVALID_VALUE) return "GL_INVALID_VALUE";
+  if (error === gl.INVALID_OPERATION) return "GL_INVALID_OPERATION";
+  if (error === gl.INVALID_FRAMEBUFFER_OPERATION) return "GL_INVALID_FRAMEBUFFER_OPERATION";
+  if (error === gl.OUT_OF_MEMORY) return "GL_OUT_OF_MEMORY";
+  if (error === gl.CONTEXT_LOST_WEBGL) return "GL_CONTEXT_LOST_WEBGL";
+  return `0x${error.toString(16)}`;
+}
+
+function checkGlErrors(gl: WebGL2RenderingContext, label: string) {
+  let error = gl.getError();
+  if (error === gl.NO_ERROR) return;
+  const errors: string[] = [];
+  while (error !== gl.NO_ERROR) {
+    errors.push(formatGlError(gl, error));
+    error = gl.getError();
+  }
+  const suffix = errors.length > 1 ? "s" : "";
+  throw new Error(`WebGL error${suffix} after ${label}: ${errors.join(", ")}`);
 }
 
 function warnUniformType(
@@ -346,6 +399,7 @@ export class GraphRunner {
   private frameIndex = 0;
   private lastTimeSec: number | null = null;
   private debugEnabled: boolean;
+  private glErrorsEnabled: boolean;
   private debugSnapshot: PassDebugInfo[] = [];
   private camera: CameraUniforms = {
     position: [0, 0, 3],
@@ -365,6 +419,7 @@ export class GraphRunner {
     this.assets = assets;
     this.allowFloat = Boolean(gl.getExtension("EXT_color_buffer_float"));
     this.debugEnabled = options.debug ?? false;
+    this.glErrorsEnabled = options.glErrors ?? false;
     if (!this.allowFloat) {
       console.warn("EXT_color_buffer_float not available; falling back to RGBA8 textures.");
     }
@@ -402,6 +457,10 @@ export class GraphRunner {
 
   setDebugEnabled(enabled: boolean) {
     this.debugEnabled = enabled;
+  }
+
+  setGlErrorsEnabled(enabled: boolean) {
+    this.glErrorsEnabled = enabled;
   }
 
   setCamera(camera: CameraUniforms) {
@@ -628,6 +687,9 @@ export class GraphRunner {
       }
 
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (this.glErrorsEnabled) {
+        checkGlErrors(gl, `pass "${pass.id}"`);
+      }
 
       if (pass.outputs) {
         for (const [name, desc] of Object.entries(pass.outputs)) {
@@ -686,6 +748,9 @@ export class GraphRunner {
       gl.uniform1i(loc, 0);
     }
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (this.glErrorsEnabled) {
+      checkGlErrors(gl, "present");
+    }
     if (!persistentKeys.has(outputKey)) {
       this.pool.release(finalTexture);
     }

@@ -565,6 +565,47 @@ function resolveUrl(baseUrl: string, path: string) {
   return new URL(path, base).toString();
 }
 
+type IncludeState = {
+  cache: Map<string, string>;
+  sourceIds: Map<string, number>;
+  idToUrl: Map<number, string>;
+};
+
+function getSourceId(state: IncludeState, url: string) {
+  const existing = state.sourceIds.get(url);
+  if (existing !== undefined) return existing;
+  const id = state.sourceIds.size;
+  state.sourceIds.set(url, id);
+  state.idToUrl.set(id, url);
+  return id;
+}
+
+function countNewlines(text: string) {
+  let count = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === "\n") count++;
+  }
+  return count;
+}
+
+function injectSourceMapHeader(source: string, state: IncludeState, rootUrl: string) {
+  const rootId = getSourceId(state, rootUrl);
+  const entries = Array.from(state.idToUrl.entries()).sort((a, b) => a[0] - b[0]);
+  const headerLines = entries.map(([id, url]) => `// @source ${id} ${url}`);
+  headerLines.push(`#line 1 ${rootId}`);
+  const header = `${headerLines.join("\n")}\n`;
+  if (source.startsWith("#version")) {
+    const endLine = source.indexOf("\n");
+    if (endLine === -1) {
+      return `${source}\n${header}`;
+    }
+    return `${source.slice(0, endLine + 1)}${header}${source.slice(endLine + 1)}`;
+  }
+  return `${header}${source}`;
+}
+
+export type TextResolver = (url: string) => Promise<string>;
+
 async function fetchText(url: string): Promise<string> {
   const response = await fetch(url);
   if (!response.ok) {
@@ -577,29 +618,35 @@ async function expandShaderIncludes(
   source: string,
   baseUrl: string,
   stack: Set<string>,
-  cache: Map<string, string>
+  state: IncludeState,
+  readText: TextResolver
 ): Promise<string> {
   const includePattern = /^[ \t]*#include\s+"([^"]+)"\s*$/gm;
   let result = "";
   let lastIndex = 0;
+  let lineNumber = 1;
+  const currentId = getSourceId(state, baseUrl);
   let match: RegExpExecArray | null;
   while ((match = includePattern.exec(source)) !== null) {
-    result += source.slice(lastIndex, match.index);
+    const before = source.slice(lastIndex, match.index);
+    result += before;
+    lineNumber += countNewlines(before);
     const includePath = match[1];
     const includeUrl = resolveUrl(baseUrl, includePath);
     if (stack.has(includeUrl)) {
       throw new Error(`Shader include cycle detected at "${includeUrl}".`);
     }
-    const cached = cache.get(includeUrl);
-    if (cached) {
-      result += cached;
+    const cached = state.cache.get(includeUrl);
+    const includeId = getSourceId(state, includeUrl);
+    if (cached !== undefined) {
+      result += `#line 1 ${includeId}\n${cached}\n#line ${lineNumber + 1} ${currentId}\n`;
     } else {
       stack.add(includeUrl);
-      const includeText = await fetchText(includeUrl);
-      const expanded = await expandShaderIncludes(includeText, includeUrl, stack, cache);
+      const includeText = await readText(includeUrl);
+      const expanded = await expandShaderIncludes(includeText, includeUrl, stack, state, readText);
       stack.delete(includeUrl);
-      cache.set(includeUrl, expanded);
-      result += expanded;
+      state.cache.set(includeUrl, expanded);
+      result += `#line 1 ${includeId}\n${expanded}\n#line ${lineNumber + 1} ${currentId}\n`;
     }
     lastIndex = includePattern.lastIndex;
   }
@@ -607,27 +654,33 @@ async function expandShaderIncludes(
   return result;
 }
 
-async function resolveIncludes(value: unknown, baseUrl: string, cache: Map<string, string>): Promise<unknown> {
+async function resolveIncludes(
+  value: unknown,
+  baseUrl: string,
+  state: IncludeState,
+  readText: TextResolver
+): Promise<unknown> {
   if (isIncludeRef(value)) {
     const url = resolveUrl(baseUrl, value.$include);
-    const text = await fetchText(url);
+    const text = await readText(url);
     if (url.toLowerCase().endsWith(".json")) {
       const parsed = JSON.parse(text) as unknown;
-      return resolveIncludes(parsed, url, cache);
+      return resolveIncludes(parsed, url, state, readText);
     }
-    return expandShaderIncludes(text, url, new Set([url]), cache);
+    const expanded = await expandShaderIncludes(text, url, new Set([url]), state, readText);
+    return injectSourceMapHeader(expanded, state, url);
   }
   if (Array.isArray(value)) {
     const resolved = [] as unknown[];
     for (const entry of value) {
-      resolved.push(await resolveIncludes(entry, baseUrl, cache));
+      resolved.push(await resolveIncludes(entry, baseUrl, state, readText));
     }
     return resolved;
   }
   if (isObject(value)) {
     const resolved: Record<string, unknown> = {};
     for (const [key, entry] of Object.entries(value)) {
-      resolved[key] = await resolveIncludes(entry, baseUrl, cache);
+      resolved[key] = await resolveIncludes(entry, baseUrl, state, readText);
     }
     return resolved;
   }
@@ -746,19 +799,27 @@ function buildProject(source: ProjectSource, baseUrl: string): Project {
   return { baseUrl, shaders, components, assets: source.assets ?? {}, graphs };
 }
 
-export async function loadProject(url: string): Promise<Project> {
+export async function loadProjectWithResolver(url: string, readText: TextResolver): Promise<Project> {
   const resolvedUrl = new URL(url, window.location.href).toString();
-  const text = await fetchText(resolvedUrl);
+  const text = await readText(resolvedUrl);
   let raw: ProjectSource;
   try {
     raw = JSON.parse(text) as ProjectSource;
   } catch (error) {
     throw new Error(`Failed to parse project JSON from "${resolvedUrl}".`);
   }
-  const includeCache = new Map<string, string>();
-  const resolved = (await resolveIncludes(raw, resolvedUrl, includeCache)) as ProjectSource;
+  const includeState: IncludeState = {
+    cache: new Map<string, string>(),
+    sourceIds: new Map<string, number>(),
+    idToUrl: new Map<number, string>(),
+  };
+  const resolved = (await resolveIncludes(raw, resolvedUrl, includeState, readText)) as ProjectSource;
   validateProjectSource(resolved);
   return buildProject(resolved, resolvedUrl);
+}
+
+export async function loadProject(url: string): Promise<Project> {
+  return loadProjectWithResolver(url, fetchText);
 }
 
 export function buildGraphFromProject(project: Project, graphName: string) {

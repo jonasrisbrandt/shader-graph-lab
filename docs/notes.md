@@ -148,3 +148,79 @@
 
 ## Update 2026-01-09
 - Added ui.group/ui.label defaults to common bloom and tonemap components.
+
+## Update 2026-01-09
+- Added include-aware shader error mapping with `#line` directives and source headers for `$include` GLSL.
+- Added optional WebGL error checks in GraphRunner (enabled via debug toggle in `src/main.ts`).
+
+## Update 2026-01-09
+- Added `mandelbrot-zoom` project with a single-pass Mandelbrot zoom shader ported into the JSON graph runtime.
+
+## Update 2026-01-09
+- Updated `mandelbrot-zoom` to render at 2x resolution and downsample via a resolve pass for supersampling.
+
+## Update 2026-01-09
+- Discussion: reduce Mandelbrot "pixel swimming"; options include fixed internal render size + supersample resolve, shader multi-sample taps, and optional temporal accumulation for stability.
+
+## Update 2026-01-09
+- Updated `mandelbrot-zoom` to render full-res with 4-tap rotated-grid AA, then downsample to half-res via a 2x2 box resolve for additional stability.
+
+## Update 2026-01-09
+- Mandelbrot resolve output now uses `rgba8` to guarantee linear filtering when upscaling half-res to screen (avoids blocky nearest sampling on half-float textures).
+
+## Update 2026-01-09
+- `mandelbrot-zoom` now renders at 2x resolution and resolves down to full screen (no half-res output), keeping the 2x2 box downsample.
+
+## Update 2026-01-09
+- Mandelbrot now renders at 2x and downsamples twice (2x box filter each) to a 0.5x output; multi-tap AA in the shader removed to isolate scaling quality.
+
+## Update 2026-01-09
+- Mandelbrot now renders 2x and resolves to full resolution with a 4x4 tent downsample kernel (single resolve pass).
+
+## Update 2026-01-09
+- Reverted `mandelbrot-zoom` to a simple 2x render + linear blit resolve to full resolution (no custom kernel).
+
+## Update 2026-01-09
+- Added bloom + tonemap components to `mandelbrot-zoom`, mirroring the `metaballs-light` pipeline after the resolve pass.
+
+## Update 2026-01-09
+- Guarded Mandelbrot smooth-coloring against non-escaping points to avoid NaNs (stabilizes bloom/tonemap).
+
+## Update 2026-01-09
+- Added `sdf3d_safe_normalize` in common SDF chunks to avoid NaNs in normals/specular (reduces intermittent bloom artifacts).
+
+## Update 2026-01-09
+- Tuned `mandelbrot-zoom` bloom/tonemap defaults (threshold 0.942, intensity 2.77, exposure 2.0482).
+
+## Update 2026-01-09
+- Added a NaN guard in `metaballs-light` (safe light-dir normalize + color NaN clamp) to eliminate intermittent black boxes.
+
+## Update 2026-01-09
+- Increased metaballs normal epsilon to 0.004 to reduce seam artifacts at smooth-union blends.
+
+## Update 2026-01-09
+- Documented the Codex auth toggle script usage in `docs/codex-auth.md`.
+
+## Update 2026-01-09
+- Planned edit-mode storage: public projects listed in `public/projects/index.json`, full-copy to IndexedDB on first write, with `local:` ids and a `ProjectStore` service layer.
+
+## Update 2026-01-09
+- Added edit-mode shell UI (split view) with file list + tab bar and in-browser text editor, wired via `ProjectStore` and `?edit=1`.
+
+## Update 2026-01-09
+- Anchored the uniforms UI to the render pane so it no longer overlays the editor panel.
+
+## Update 2026-01-09
+- Editor layout now renders left of the canvas at a 50/50 split; file list column narrowed to keep code area wider.
+
+## Update 2026-01-09
+- Added draggable resizers for the editor/render split and the file list width.
+
+## Update 2026-01-09
+- Persisted editor split and sidebar widths in localStorage (`sgl:editorSplit`, `sgl:editorSidebar`).
+
+## Update 2026-01-09
+- Added editor save (button + Ctrl/Cmd+S) that writes to `ProjectStore` and reloads the render graph, supporting `local:` project ids.
+
+## Update 2026-01-09
+- Added CodeMirror-based syntax highlighting for JSON and GLSL in the editor panel.
