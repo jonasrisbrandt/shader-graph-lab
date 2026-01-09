@@ -19,9 +19,9 @@
         "out": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
       },
       "uniforms": {
-        "uExposure": { "type": "f1", "value": 1.0, "min": 0.1, "max": 5 },
-        "uGamma": { "type": "f1", "value": 2.2, "min": 1.0, "max": 3.0 },
-        "uUseLut": { "type": "f1", "value": 1.0, "min": 0, "max": 1, "step": 1 }
+        "uExposure": { "type": "f1", "value": 1.0, "min": 0.1, "max": 5, "ui": { "group": "tonemap", "label": "Exposure" } },
+        "uGamma": { "type": "f1", "value": 2.2, "min": 1.0, "max": 3.0, "ui": { "group": "tonemap", "label": "Gamma" } },
+        "uUseLut": { "type": "f1", "value": 1.0, "min": 0, "max": 1, "step": 1, "ui": { "group": "tonemap", "label": "Use LUT" } }
       }
     }
   ]

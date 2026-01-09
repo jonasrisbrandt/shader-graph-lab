@@ -20,6 +20,8 @@ export type ComponentInstance = {
   outputs: Record<string, string>;
 };
 
+export type ComponentUniformOverrides = Record<string, Record<string, Partial<UniformSpec>>>;
+
 function prefixPassId(instanceId: string, passId: string) {
   return `${instanceId}.${passId}`;
 }
@@ -107,6 +109,54 @@ function applyUniformGrouping(instanceId: string, uniforms?: Record<string, Unif
   return next;
 }
 
+function isUniformValueCompatible(type: UniformSpec["type"], value: UniformSpec["value"]) {
+  if (type === "f1") {
+    return typeof value === "number";
+  }
+  if (!Array.isArray(value)) return false;
+  if (type === "f2") return value.length === 2;
+  if (type === "f3") return value.length === 3;
+  if (type === "f4") return value.length === 4;
+  return false;
+}
+
+function applyUniformOverrides(
+  uniforms: Record<string, UniformSpec> | undefined,
+  overrides: Record<string, Partial<UniformSpec>> | undefined,
+  passId: string,
+  instanceId: string
+) {
+  if (!overrides) return uniforms;
+  if (!uniforms) {
+    throw new Error(`Component "${instanceId}" pass "${passId}" has uniform overrides but no uniforms.`);
+  }
+  const next: Record<string, UniformSpec> = { ...uniforms };
+  for (const [name, override] of Object.entries(overrides)) {
+    const base = uniforms[name];
+    if (!base) {
+      throw new Error(`Component "${instanceId}" pass "${passId}" has no uniform "${name}" to override.`);
+    }
+    if (override.type && override.type !== base.type) {
+      throw new Error(
+        `Component "${instanceId}" pass "${passId}" uniform "${name}" override type "${override.type}" does not match "${base.type}".`
+      );
+    }
+    if (override.value !== undefined && !isUniformValueCompatible(base.type, override.value)) {
+      throw new Error(
+        `Component "${instanceId}" pass "${passId}" uniform "${name}" override value does not match type "${base.type}".`
+      );
+    }
+    const nextUi = override.ui ? { ...(base.ui ?? {}), ...override.ui } : base.ui;
+    next[name] = {
+      ...base,
+      ...override,
+      ui: nextUi,
+      type: base.type,
+    };
+  }
+  return next;
+}
+
 function collectPassOutputs(passes: PassDef[]) {
   const outputs = new Map<string, TextureDesc>();
   for (const pass of passes) {
@@ -176,12 +226,21 @@ function validateComponentSpec(spec: ComponentSpec) {
 export function instantiateComponent(
   spec: ComponentSpec,
   instanceId: string,
-  bindings: Record<string, string>
+  bindings: Record<string, string>,
+  overrides?: ComponentUniformOverrides
 ): ComponentInstance {
   validateComponentSpec(spec);
   for (const inputName of Object.keys(spec.inputs)) {
     if (!bindings[inputName]) {
       throw new Error(`Component "${spec.name}" missing binding for input "${inputName}".`);
+    }
+  }
+  if (overrides) {
+    const passIds = new Set(spec.passes.map((pass) => pass.id));
+    for (const passId of Object.keys(overrides)) {
+      if (!passIds.has(passId)) {
+        throw new Error(`Component "${spec.name}" has no pass "${passId}" for uniform overrides.`);
+      }
     }
   }
 
@@ -202,11 +261,12 @@ export function instantiateComponent(
         )
       : undefined;
 
+    const overrideUniforms = applyUniformOverrides(pass.uniforms, overrides?.[pass.id], pass.id, instanceId);
     return {
       ...pass,
       id: prefixPassId(instanceId, pass.id),
       inputs,
-      uniforms: applyUniformGrouping(instanceId, pass.uniforms),
+      uniforms: applyUniformGrouping(instanceId, overrideUniforms),
     };
   });
 

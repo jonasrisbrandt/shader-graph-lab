@@ -17,7 +17,7 @@
       "outputs": {
         "bright": { "format": "rgba16f", "size": { "kind": "half" }, "filter": "linear" }
       },
-      "uniforms": { "uThreshold": { "type": "f1", "value": 0.35, "min": 0, "max": 2 } }
+      "uniforms": { "uThreshold": { "type": "f1", "value": 0.35, "min": 0, "max": 2, "ui": { "group": "bloom", "label": "Threshold" } } }
     },
     {
       "id": "blurX0",
@@ -82,7 +82,7 @@
         "uBloom2": { "source": "blurY2.out" }
       },
       "outputs": { "out": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" } },
-      "uniforms": { "uBloomWeights": { "type": "f3", "value": [0.7, 1.0, 1.2], "min": 0, "max": 3 } }
+      "uniforms": { "uBloomWeights": { "type": "f3", "value": [0.7, 1.0, 1.2], "min": 0, "max": 3, "ui": { "group": "bloom", "label": "Bloom Weights" } } }
     }
   ]
 }

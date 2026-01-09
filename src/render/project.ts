@@ -1,4 +1,4 @@
-import { ComponentSpec, instantiateComponent } from "./component";
+import { ComponentSpec, ComponentUniformOverrides, instantiateComponent } from "./component";
 import { GraphBuilder } from "./graph";
 import { AssetSpec, PassDef } from "./types";
 
@@ -17,6 +17,7 @@ export type ComponentInstanceSource = {
   id: string;
   component: string;
   bindings: Record<string, string>;
+  uniforms?: ComponentUniformOverrides;
 };
 
 export type GraphSource = {
@@ -219,6 +220,49 @@ function validateUniformSpec(value: unknown, label: string) {
   }
 }
 
+function validateUniformOverride(value: unknown, label: string) {
+  const spec = assertObject(value, label);
+  if ("type" in spec && spec.type !== undefined) {
+    const type = assertString(spec.type, `${label}.type`);
+    if (!VALID_UNIFORM_TYPES.has(type)) {
+      throw new Error(`${label}.type must be one of ${Array.from(VALID_UNIFORM_TYPES).join(", ")}.`);
+    }
+  }
+  if ("value" in spec && spec.value !== undefined) {
+    if (typeof spec.value === "number") {
+      // ok
+    } else if (Array.isArray(spec.value)) {
+      if (spec.value.length < 2 || spec.value.length > 4) {
+        throw new Error(`${label}.value must be a number[2..4].`);
+      }
+      spec.value.forEach((entry, index) => assertNumber(entry, `${label}.value[${index}]`));
+    } else {
+      throw new Error(`${label}.value must be a number or array of numbers.`);
+    }
+  }
+  if ("min" in spec && spec.min !== undefined) {
+    assertNumber(spec.min, `${label}.min`);
+  }
+  if ("max" in spec && spec.max !== undefined) {
+    assertNumber(spec.max, `${label}.max`);
+  }
+  if ("step" in spec && spec.step !== undefined) {
+    assertNumber(spec.step, `${label}.step`);
+  }
+  if ("ui" in spec && spec.ui !== undefined) {
+    const ui = assertObject(spec.ui, `${label}.ui`);
+    if ("show" in ui && ui.show !== undefined) {
+      assertBoolean(ui.show, `${label}.ui.show`);
+    }
+    if ("label" in ui && ui.label !== undefined) {
+      assertString(ui.label, `${label}.ui.label`);
+    }
+    if ("group" in ui && ui.group !== undefined) {
+      assertString(ui.group, `${label}.ui.group`);
+    }
+  }
+}
+
 function validateInputSource(
   source: string,
   label: string,
@@ -374,6 +418,15 @@ function validateComponentInstance(value: unknown, label: string) {
   const bindings = assertObject(instance.bindings, `${label}.bindings`);
   for (const [key, binding] of Object.entries(bindings)) {
     assertString(binding, `${label}.bindings.${key}`);
+  }
+  if ("uniforms" in instance && instance.uniforms !== undefined) {
+    const overrides = assertObject(instance.uniforms, `${label}.uniforms`);
+    for (const [passId, uniforms] of Object.entries(overrides)) {
+      const uniformMap = assertObject(uniforms, `${label}.uniforms.${passId}`);
+      for (const [name, uniform] of Object.entries(uniformMap)) {
+        validateUniformOverride(uniform, `${label}.uniforms.${passId}.${name}`);
+      }
+    }
   }
 }
 
@@ -757,7 +810,7 @@ export function buildGraphFromProject(project: Project, graphName: string) {
     if (!spec) {
       throw new Error(`Component "${instance.component}" not found in project.`);
     }
-    const component = instantiateComponent(spec, instance.id, instance.bindings);
+    const component = instantiateComponent(spec, instance.id, instance.bindings, instance.uniforms);
     const updatedPasses = component.passes.map((pass) => {
       validateAssetRefs(pass);
       return applyAssetUniforms(pass);

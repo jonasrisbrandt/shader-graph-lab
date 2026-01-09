@@ -80,3 +80,4 @@ Graph Definition -> Graph Runner -> Pass Execution -> Texture Pool -> Framebuffe
 ## UI Integration
 - Uniforms can include `ui` metadata: `{ show, label, group }` for display control.
 - Graphs can define `uiGroups` to configure group labels/order/collapsed state.
+- Component instances can override pass uniform defaults via `uniforms: { passId: { uniformName: { value, ui, min/max/step }}}`.

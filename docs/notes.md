@@ -136,3 +136,12 @@
 
 ## Update 2026-01-08
 - Discussion: uniforms already support ui.group/ui.label in JSON; consider optional uiGroups metadata (order/collapsed) if we need richer grouping.
+
+## Update 2026-01-09
+- Metaballs defaults updated (ball count 7, bloom intensity 4, bloom threshold/weights, tonemap exposure/gamma) via component instance overrides.
+
+## Update 2026-01-09
+- Added component instance uniform overrides (passId -> uniform override) and switched metaballs bloom/tonemap defaults to use it.
+
+## Update 2026-01-09
+- Added ui.group/ui.label defaults to common bloom and tonemap components.
