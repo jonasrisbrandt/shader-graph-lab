@@ -62,6 +62,11 @@ vec3 ballColor(int index, float t) {
   );
 }
 
+bool anyNan(vec3 v) {
+  bvec3 mask = isnan(v);
+  return mask.x || mask.y || mask.z;
+}
+
 float mapSdf(vec3 p) {
   float t = uTime * 1.2;
   float r = 0.5;
@@ -108,9 +113,9 @@ void main() {
   }
 
   vec3 p = ro + rd * tHit;
-  vec3 n = sdf3d_calc_normal(p, 0.002);
+  vec3 n = sdf3d_calc_normal(p, 0.004);
   vec3 v = normalize(-rd);
-  vec3 lightDir = normalize(uLightDir);
+  vec3 lightDir = sdf3d_safe_normalize(uLightDir);
 
   float shadow = sdf3d_soft_shadow(p + n * 0.02, lightDir, 0.02, 6.0, uShadowK);
   float ao = sdf3d_ao(p, n, 0.05, uAoStrength);
@@ -127,5 +132,8 @@ void main() {
   vec3 color = ambient * ao + direct * shadowFactor;
   float fog = smoothstep(2.5, 7.5, tHit);
   color = mix(color, bg, fog);
+  if (anyNan(color)) {
+    color = vec3(0.0);
+  }
   outColor = vec4(color, 1.0);
 }

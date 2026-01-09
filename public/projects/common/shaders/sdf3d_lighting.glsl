@@ -3,7 +3,7 @@ float sdf3d_diffuse(vec3 n, vec3 l) {
 }
 
 float sdf3d_specular(vec3 n, vec3 l, vec3 v, float shininess) {
-  vec3 h = normalize(l + v);
+  vec3 h = sdf3d_safe_normalize(l + v);
   return pow(max(dot(n, h), 0.0), shininess);
 }
 
