@@ -1,8 +1,8 @@
 import { Compartment, EditorState, type Extension } from "@codemirror/state";
-import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { highlightActiveLine, highlightActiveLineGutter, lineNumbers, placeholder, EditorView } from "@codemirror/view";
 import { json } from "@codemirror/lang-json";
 import { cpp } from "@codemirror/lang-cpp";
-import { EditorView, highlightActiveLineGutter, lineNumbers, placeholder } from "@codemirror/view";
+import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 
 const languageCompartment = new Compartment();
 const editableCompartment = new Compartment();
@@ -11,30 +11,14 @@ const placeholderCompartment = new Compartment();
 const editorTheme = EditorView.theme({
   "&": {
     height: "100%",
-    backgroundColor: "#0b0d12",
-    color: "#e6e6e6",
   },
   ".cm-content": {
     fontFamily: 'Consolas, Menlo, Monaco, "Courier New", monospace',
     fontSize: "12px",
     lineHeight: "1.5",
   },
-  ".cm-gutters": {
-    backgroundColor: "#0f1219",
-    color: "rgba(255, 255, 255, 0.45)",
-    border: "none",
-  },
   ".cm-lineNumbers .cm-gutterElement": {
     padding: "0 6px",
-  },
-  ".cm-activeLine": {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-  },
-  ".cm-selectionBackground": {
-    backgroundColor: "rgba(255, 255, 255, 0.18)",
-  },
-  ".cm-cursor": {
-    borderLeftColor: "#f5a97f",
   },
   ".cm-placeholder": {
     color: "rgba(255, 255, 255, 0.35)",
@@ -57,8 +41,9 @@ export class CodeEditor {
       doc: "",
       extensions: [
         lineNumbers(),
+        highlightActiveLine(),
         highlightActiveLineGutter(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        vscodeDark,
         editorTheme,
         languageCompartment.of([]),
         editableCompartment.of(EditorView.editable.of(false)),

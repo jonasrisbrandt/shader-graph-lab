@@ -224,3 +224,9 @@
 
 ## Update 2026-01-09
 - Added CodeMirror-based syntax highlighting for JSON and GLSL in the editor panel.
+
+## Update 2026-01-09
+- Switched editor highlighting to the VS Code dark theme and enabled active line highlighting.
+
+## Update 2026-01-09
+- Removed tracked Vite optimize cache (`node_modules/.vite`) and added it to `.gitignore`.
