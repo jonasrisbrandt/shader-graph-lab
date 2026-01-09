@@ -150,6 +150,18 @@ async function start() {
               });
             },
             onClose: () => setEditMode(false),
+            onProjectChange: async (nextProjectId) => {
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.set("project", nextProjectId);
+                window.history.replaceState({}, "", url);
+                await loadProjectForRender(nextProjectId);
+                await editorSession?.switchProject(nextProjectId);
+              } catch (error) {
+                console.error(error);
+                errorOverlay.show(error);
+              }
+            },
           });
           session.init().catch((error) => {
             console.error(error);

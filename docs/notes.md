@@ -263,3 +263,8 @@
 
 ## Update 2026-01-09
 - Matched hover styling for editor header buttons with the render edit toggle.
+
+## Update 2026-01-09
+- Added an editor header project switcher (select + badge) to swap projects and reload render output.
+- Project switcher now refreshes the project list after first save to include the new local copy.
+- Simplified editor header to only show the project dropdown + origin badge (removed the extra project title/meta header).

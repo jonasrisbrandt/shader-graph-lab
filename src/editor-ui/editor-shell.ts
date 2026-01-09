@@ -13,13 +13,14 @@ type EditorShellCallbacks = {
   onContentChange: (path: string, content: string) => void;
   onSave: () => void;
   onClose: () => void;
+  onProjectChange: (projectId: string) => void;
 };
 
 export class EditorShell {
   private root: HTMLElement;
   private callbacks: EditorShellCallbacks;
-  private headerTitle: HTMLDivElement;
-  private headerMeta: HTMLDivElement;
+  private projectSelect: HTMLSelectElement;
+  private projectBadge: HTMLSpanElement;
   private fileList: HTMLDivElement;
   private tabBar: HTMLDivElement;
   private editor: CodeEditor;
@@ -44,20 +45,26 @@ export class EditorShell {
 
     const header = document.createElement("div");
     header.className = "editor-header";
-    this.headerTitle = document.createElement("div");
-    this.headerTitle.className = "editor-header-title";
-    this.headerMeta = document.createElement("div");
-    this.headerMeta.className = "editor-header-meta";
     const headerRow = document.createElement("div");
     headerRow.style.display = "flex";
     headerRow.style.alignItems = "center";
     headerRow.style.justifyContent = "space-between";
     headerRow.style.gap = "12px";
-    const headerText = document.createElement("div");
-    headerText.style.display = "flex";
-    headerText.style.flexDirection = "column";
-    headerText.style.gap = "4px";
-    headerText.append(this.headerTitle, this.headerMeta);
+    const projectRow = document.createElement("div");
+    projectRow.style.display = "flex";
+    projectRow.style.alignItems = "center";
+    projectRow.style.gap = "8px";
+    const projectLabel = document.createElement("span");
+    projectLabel.textContent = "Project:";
+    projectLabel.style.color = "var(--ui-muted)";
+    this.projectSelect = document.createElement("select");
+    this.projectSelect.className = "editor-select";
+    this.projectSelect.addEventListener("change", () => {
+      this.callbacks.onProjectChange(this.projectSelect.value);
+    });
+    this.projectBadge = document.createElement("span");
+    this.projectBadge.className = "editor-badge";
+    projectRow.append(projectLabel, this.projectSelect, this.projectBadge);
     const headerActions = document.createElement("div");
     headerActions.style.display = "flex";
     headerActions.style.gap = "8px";
@@ -77,7 +84,7 @@ export class EditorShell {
       this.callbacks.onClose();
     });
     headerActions.append(this.saveButton, this.closeButton);
-    headerRow.append(headerText, headerActions);
+    headerRow.append(projectRow, headerActions);
     header.append(headerRow);
 
     const body = document.createElement("div");
@@ -125,11 +132,25 @@ export class EditorShell {
   }
 
   setProjectInfo(info: EditorProjectInfo) {
-    this.headerTitle.textContent = info.name;
-    const meta = info.origin === "local" && info.baseId
-      ? `local (base: ${info.baseId})`
-      : info.origin;
-    this.headerMeta.textContent = `${info.id} | ${meta}`;
+    this.projectBadge.textContent = info.origin;
+  }
+
+  setProjectList(entries: EditorProjectInfo[], currentId: string) {
+    this.projectSelect.innerHTML = "";
+    const sorted = entries.slice().sort((a, b) => a.name.localeCompare(b.name));
+    for (const entry of sorted) {
+      const option = document.createElement("option");
+      option.value = entry.id;
+      option.textContent = entry.name;
+      if (entry.id === currentId) {
+        option.selected = true;
+      }
+      this.projectSelect.appendChild(option);
+    }
+  }
+
+  setProjectSelectEnabled(enabled: boolean) {
+    this.projectSelect.disabled = !enabled;
   }
 
   setFiles(files: string[], activeFile: string | null, dirtyFiles: Set<string>) {

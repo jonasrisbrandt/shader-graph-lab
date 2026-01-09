@@ -7,6 +7,7 @@ type EditorSessionOptions = {
   store: ProjectStore;
   onSaveProject?: (projectId: string) => void;
   onClose?: () => void;
+  onProjectChange?: (projectId: string) => void;
 };
 
 export class EditorSession {
@@ -15,6 +16,7 @@ export class EditorSession {
   private shell: EditorShell;
   private onSaveProject?: (projectId: string) => void;
   private onClose?: () => void;
+  private onProjectChange?: (projectId: string) => void;
   private keyHandler: (event: KeyboardEvent) => void;
   private files: string[] = [];
   private tabs: string[] = [];
@@ -27,6 +29,7 @@ export class EditorSession {
     this.projectId = options.projectId;
     this.onSaveProject = options.onSaveProject;
     this.onClose = options.onClose;
+    this.onProjectChange = options.onProjectChange;
     this.keyHandler = (event) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
         event.preventDefault();
@@ -41,29 +44,14 @@ export class EditorSession {
       onContentChange: (path, content) => this.updateContent(path, content),
       onSave: () => this.saveActiveFile(),
       onClose: () => this.onClose?.(),
+      onProjectChange: (projectId) => this.onProjectChange?.(projectId),
     });
   }
 
   async init() {
     window.addEventListener("keydown", this.keyHandler);
-    const info = await this.store.getProject(this.projectId);
-    if (info) {
-      this.shell.setProjectInfo(info);
-    } else {
-      this.shell.setProjectInfo({
-        id: this.projectId,
-        name: this.projectId,
-        origin: "public",
-      });
-    }
-    this.files = await this.store.listFiles(this.projectId);
-    this.shell.setFiles(this.files, this.activeFile, this.dirtyFiles);
-    const defaultFile = this.pickDefaultFile(this.files);
-    if (defaultFile) {
-      await this.openFile(defaultFile);
-    } else {
-      this.shell.setMessage("No files found in project.");
-    }
+    await this.refreshProjects();
+    await this.loadProject();
   }
 
   private pickDefaultFile(files: string[]) {
@@ -93,6 +81,38 @@ export class EditorSession {
     }
   }
 
+  private async refreshProjects() {
+    const projects = await this.store.listProjects();
+    this.shell.setProjectList(projects, this.projectId);
+    this.shell.setProjectSelectEnabled(true);
+  }
+
+  private async loadProject() {
+    const info = await this.store.getProject(this.projectId);
+    if (info) {
+      this.shell.setProjectInfo(info);
+    } else {
+      this.shell.setProjectInfo({
+        id: this.projectId,
+        name: this.projectId,
+        origin: "public",
+      });
+    }
+    this.files = await this.store.listFiles(this.projectId);
+    this.tabs = [];
+    this.activeFile = null;
+    this.fileContents.clear();
+    this.dirtyFiles.clear();
+    this.shell.setTabs(this.tabs, this.activeFile, this.dirtyFiles);
+    this.shell.setFiles(this.files, this.activeFile, this.dirtyFiles);
+    const defaultFile = this.pickDefaultFile(this.files);
+    if (defaultFile) {
+      await this.openFile(defaultFile);
+    } else {
+      this.shell.setMessage("No files found in project.");
+    }
+  }
+
   private updateContent(path: string, content: string) {
     this.fileContents.set(path, content);
     if (!this.dirtyFiles.has(path)) {
@@ -119,10 +139,18 @@ export class EditorSession {
       const url = new URL(window.location.href);
       url.searchParams.set("project", this.projectId);
       window.history.replaceState({}, "", url);
+      await this.refreshProjects();
     }
     this.dirtyFiles.delete(this.activeFile);
     this.shell.setDirtyFiles(this.dirtyFiles);
     this.onSaveProject?.(this.projectId);
+  }
+
+  async switchProject(projectId: string) {
+    if (projectId === this.projectId) return;
+    this.projectId = projectId;
+    await this.refreshProjects();
+    await this.loadProject();
   }
 
   dispose() {
