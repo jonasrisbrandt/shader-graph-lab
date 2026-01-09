@@ -137,11 +137,16 @@ export class EditorShell {
 
   setProjectList(entries: EditorProjectInfo[], currentId: string) {
     this.projectSelect.innerHTML = "";
-    const sorted = entries.slice().sort((a, b) => a.name.localeCompare(b.name));
+    const sorted = entries.slice().sort((a, b) => {
+      const nameOrder = a.name.localeCompare(b.name);
+      if (nameOrder !== 0) return nameOrder;
+      if (a.origin === b.origin) return 0;
+      return a.origin === "local" ? -1 : 1;
+    });
     for (const entry of sorted) {
       const option = document.createElement("option");
       option.value = entry.id;
-      option.textContent = entry.name;
+      option.textContent = this.formatProjectLabel(entry);
       if (entry.id === currentId) {
         option.selected = true;
       }
@@ -274,6 +279,15 @@ export class EditorShell {
     const enabled = this.activeFile !== null && this.dirtyFiles.has(this.activeFile);
     this.saveButton.disabled = !enabled;
     this.saveButton.title = enabled ? "Save (Ctrl/Cmd+S)" : "No changes";
+  }
+
+  private formatProjectLabel(info: EditorProjectInfo) {
+    if (info.origin === "local") {
+      return info.baseId
+        ? `${info.name} (local, base: ${info.baseId})`
+        : `${info.name} (local)`;
+    }
+    return `${info.name} (public)`;
   }
 
   private setupSidebarResizer(resizer: HTMLDivElement) {
