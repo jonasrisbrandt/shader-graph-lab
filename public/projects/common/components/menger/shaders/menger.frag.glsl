@@ -88,8 +88,8 @@ vec4 mapMengerLocal(vec3 p) {
   vec4 res = vec4(d, 1.0, 0.0, 0.0);
 
   float s = 1.0;
-  int iterations = int(clamp(uMengerIter, 1.0, 4.0));
-  for (int m = 0; m < 4; m++) {
+  int iterations = int(clamp(uMengerIter, 1.0, 6.0));
+  for (int m = 0; m < 6; m++) {
     if (m >= iterations) break;
     vec3 a = mod(p * s, 2.0) - 1.0;
     s *= 3.0;
