@@ -230,3 +230,18 @@
 
 ## Update 2026-01-09
 - Removed tracked Vite optimize cache (`node_modules/.vite`) and added it to `.gitignore`.
+
+## Update 2026-01-09
+- Introduced VS Code dark-style UI tokens in `index.html` and styled lil-gui with rounded corners to match the editor.
+
+## Update 2026-01-09
+- Moved theme tokens and lil-gui styling to `src/ui/theme.css` and set `data-theme="vscode-dark"` on the document.
+
+## Update 2026-01-09
+- Moved editor layout styling into `src/ui/editor.css` for cleaner separation from `index.html`.
+
+## Update 2026-01-09
+- Moved base and overlay styles out of `index.html` into `src/ui/base.css` and `src/ui/overlays.css`.
+
+## Update 2026-01-09
+- Added `src/ui/reset.css` to normalize box sizing and default form typography; base styles now focus on layout + theme tokens.

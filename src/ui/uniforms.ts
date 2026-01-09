@@ -46,6 +46,7 @@ export function createUniformUI(graph: Graph, options?: { container?: HTMLElemen
     gui.domElement.style.right = "12px";
     gui.domElement.style.zIndex = "10";
   }
+  gui.domElement.classList.add("sgl-gui");
   const folders = new Map<string, GUI>();
   const groupMeta = graph.uiGroups ?? {};
 

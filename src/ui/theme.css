@@ -1,0 +1,36 @@
+:root[data-theme="vscode-dark"] {
+  color-scheme: dark;
+  --ui-bg: #1e1e1e;
+  --ui-panel: #252526;
+  --ui-panel-alt: #1f1f1f;
+  --ui-border: #2a2d2e;
+  --ui-text: #d4d4d4;
+  --ui-muted: #8a8a8a;
+  --ui-accent: #007acc;
+  --ui-accent-strong: #3794ff;
+  --ui-error: #f44747;
+  --ui-shadow: rgba(0, 0, 0, 0.45);
+  --ui-radius: 8px;
+  --ui-radius-sm: 6px;
+  --ui-highlight: rgba(255, 255, 255, 0.08);
+  --ui-highlight-strong: rgba(255, 255, 255, 0.14);
+  --ui-font-mono: Consolas, Menlo, Monaco, "Courier New", monospace;
+}
+
+.sgl-gui {
+  --background-color: var(--ui-panel);
+  --title-background-color: var(--ui-panel-alt);
+  --title-text-color: var(--ui-text);
+  --text-color: var(--ui-text);
+  --widget-color: #333333;
+  --hover-color: #3c3c3c;
+  --focus-color: #4a4a4a;
+  --number-color: var(--ui-accent-strong);
+  --string-color: #8ec07c;
+  --font-family: var(--ui-font-mono);
+  --widget-border-radius: var(--ui-radius-sm);
+  border-radius: var(--ui-radius);
+  border: 1px solid var(--ui-border);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}

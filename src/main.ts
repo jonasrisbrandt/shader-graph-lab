@@ -1,6 +1,11 @@
 import { GraphRunner } from "./render/runtime";
 import { loadProjectAssets } from "./render/assets";
 import { buildGraphFromProject, loadProject, loadProjectWithResolver } from "./render/project";
+import "./ui/reset.css";
+import "./ui/theme.css";
+import "./ui/editor.css";
+import "./ui/base.css";
+import "./ui/overlays.css";
 import { OrbitCameraController, StaticCameraController } from "./ui/camera";
 import { createDebugOverlay } from "./ui/debug-overlay";
 import { createErrorOverlay } from "./ui/error-overlay";
