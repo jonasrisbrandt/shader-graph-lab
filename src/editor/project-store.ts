@@ -42,6 +42,10 @@ export function stripLocalPrefix(projectId: string) {
   return isLocalProjectId(projectId) ? projectId.slice(LOCAL_PREFIX.length) : projectId;
 }
 
+function getAppBaseUrl() {
+  return new URL(".", window.location.href);
+}
+
 export interface ProjectStore {
   listProjects(): Promise<ProjectInfo[]>;
   getProject(projectId: string): Promise<ProjectInfo | null>;
@@ -91,8 +95,9 @@ export class PublicProjectStore implements ProjectStore {
   private manifest: PublicProjectManifest | null = null;
 
   constructor(options?: { manifestUrl?: string; baseUrl?: string }) {
-    this.manifestUrl = options?.manifestUrl ?? "/projects/index.json";
-    this.baseUrl = options?.baseUrl ?? "/projects";
+    const appBase = getAppBaseUrl();
+    this.manifestUrl = options?.manifestUrl ?? new URL("projects/index.json", appBase).toString();
+    this.baseUrl = options?.baseUrl ?? new URL("projects", appBase).toString();
   }
 
   async listProjects() {

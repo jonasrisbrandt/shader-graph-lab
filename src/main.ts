@@ -60,6 +60,9 @@ async function start() {
   debugEnabled = debugParam === "1" || debugParam === "true";
   debugOverlay.setVisible(debugEnabled);
   const editEnabled = editParam === "1" || editParam === "true";
+  const appBaseUrl = new URL(".", window.location.href);
+  const projectsBaseUrl = new URL("projects/", appBaseUrl);
+  const projectsBasePath = projectsBaseUrl.pathname;
   let currentProjectId = projectParam;
   const store = new CompositeProjectStore(new PublicProjectStore(), new IdbProjectStore());
   const editorRoot = document.getElementById("editor-root");
@@ -83,7 +86,7 @@ async function start() {
   const projectUrlFor = (projectId: string) => {
     if (isProjectUrl(projectId)) return projectId;
     const baseId = stripLocalPrefix(projectId);
-    return `/projects/${baseId}/project.json`;
+    return new URL(`${baseId}/project.json`, projectsBaseUrl).toString();
   };
   const fetchText = async (url: string) => {
     const response = await fetch(url);
@@ -95,7 +98,7 @@ async function start() {
   const createStoreResolver = (projectId: string) => {
     if (!store) return fetchText;
     const baseId = stripLocalPrefix(projectId);
-    const basePrefix = `/projects/${baseId}/`;
+    const basePrefix = `${projectsBasePath}${baseId}/`;
     return async (url: string) => {
       const resolved = new URL(url, window.location.href);
       if (resolved.pathname.startsWith(basePrefix) && !isProjectUrl(projectId)) {

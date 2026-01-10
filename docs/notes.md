@@ -295,4 +295,7 @@
 - Added GitHub Pages deployment workflow and a Vite base config using `VITE_BASE`.
 
 ## Update 2026-01-09
+- Resolved project/manifest URLs against the app base URL so GitHub Pages subpaths load `/projects` assets correctly.
+
+## Update 2026-01-09
 - Added a NaN/inf color sanitize step in the Menger shader to prevent black tiles from invalid outputs.
