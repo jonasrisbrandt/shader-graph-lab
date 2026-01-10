@@ -292,4 +292,7 @@
 - Resolved component inputs against component outputs during graph build to allow wiring components together (fixes Menger -> Bloom binding).
 
 ## Update 2026-01-09
+- Added GitHub Pages deployment workflow and a Vite base config using `VITE_BASE`.
+
+## Update 2026-01-09
 - Added a NaN/inf color sanitize step in the Menger shader to prevent black tiles from invalid outputs.
