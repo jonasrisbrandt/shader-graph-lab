@@ -398,6 +398,7 @@ export class GraphRunner {
   private persistent = new Map<string, { textures: TextureResource[]; index: number }>();
   private frameIndex = 0;
   private lastTimeSec: number | null = null;
+  private timeOffsetSec: number;
   private debugEnabled: boolean;
   private glErrorsEnabled: boolean;
   private debugSnapshot: PassDebugInfo[] = [];
@@ -417,6 +418,7 @@ export class GraphRunner {
     this.gl = gl;
     this.graph = graph;
     this.assets = assets;
+    this.timeOffsetSec = graph.timeOffset ?? 0;
     this.allowFloat = Boolean(gl.getExtension("EXT_color_buffer_float"));
     this.debugEnabled = options.debug ?? false;
     this.glErrorsEnabled = options.glErrors ?? false;
@@ -473,8 +475,9 @@ export class GraphRunner {
 
   render(timeSec: number, width: number, height: number) {
     const gl = this.gl;
-    const deltaTime = this.lastTimeSec !== null ? Math.max(0, timeSec - this.lastTimeSec) : 0;
-    this.lastTimeSec = timeSec;
+    const graphTime = timeSec + this.timeOffsetSec;
+    const deltaTime = this.lastTimeSec !== null ? Math.max(0, graphTime - this.lastTimeSec) : 0;
+    this.lastTimeSec = graphTime;
     const frame = this.frameIndex++;
     const outputs: OutputMap = new Map();
     const usage = new Map(this.graph.usageCounts);
@@ -587,7 +590,7 @@ export class GraphRunner {
 
       const timeLoc = runtime.uniforms.get("uTime");
       if (timeLoc && runtime.uniformTypes.get("uTime") === gl.FLOAT) {
-        gl.uniform1f(timeLoc, timeSec);
+        gl.uniform1f(timeLoc, graphTime);
       }
       const deltaLoc = runtime.uniforms.get("uDeltaTime");
       if (deltaLoc && runtime.uniformTypes.get("uDeltaTime") === gl.FLOAT) {

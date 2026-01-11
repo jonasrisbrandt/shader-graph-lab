@@ -1,19 +1,130 @@
 <!doctype html>
-<html lang="sv" data-theme="vscode-dark">
+<html lang="en" data-theme="landing-dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WebGL Kub</title>
+  <meta name="description" content="Shader graph playground for modular WebGL2 projects and rapid visual iteration." />
+  <title>ShaderLoom - Shader Graph Lab</title>
 </head>
 <body>
-  <div id="app">
-    <div id="render-root">
-      <button id="edit-toggle" type="button" aria-label="Open editor">Edit</button>
-      <canvas id="gl-canvas"></canvas>
-    </div>
-    <div id="editor-root"></div>
-    <div id="app-resizer" aria-hidden="true"></div>
+  <div class="landing">
+    <header class="site-header reveal" style="--delay: 0ms">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span class="brand-name" data-brand>ShaderLoom</span>
+      </div>
+      <nav class="site-nav">
+        <a href="#showcase">Showcase</a>
+        <a href="#features">Why ShaderLoom</a>
+        <a href="#workflow">Workflow</a>
+      </nav>
+      <a class="button primary" data-cta href="./app.html">Start looming</a>
+    </header>
+
+    <main>
+      <section class="hero reveal" style="--delay: 120ms">
+        <div class="hero-copy">
+          <p class="eyebrow" data-eyebrow>Render graphs for live shader sketches</p>
+          <h1 data-tagline>ShaderToy energy, but graph-first.</h1>
+          <p class="lead" data-description>
+            Modular multi-pass shaders with JSON projects, reusable components, and a built-in editor.
+          </p>
+          <!-- <div class="hero-meta">
+            <div class="meta-card">
+              <span class="meta-label">Projects</span>
+              <span class="meta-value" data-project-count>--</span>
+            </div>
+            <div class="meta-card">
+              <span class="meta-label">Core</span>
+              <span class="meta-value">WebGL2</span>
+            </div>
+            <div class="meta-card">
+              <span class="meta-label">Focus</span>
+              <span class="meta-value">Realtime</span>
+            </div>
+          </div> -->
+        </div>
+        <!-- <div class="hero-panel">
+          <div class="hero-display">
+            <div class="hero-grid"></div>
+            <div class="hero-card">
+              <p class="hero-title">Graph-driven rendering</p>
+              <p class="hero-body">Compose passes, reuse components, and route textures without boilerplate.</p>
+            </div>
+          </div>
+        </div> -->
+      </section>
+
+      <section class="showcase reveal" id="showcase" style="--delay: 180ms">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Showcase</p>
+            <h2>Featured projects</h2>
+            <p class="section-lead">Curated scenes straight from the pros.</p>
+          </div>
+        </div>
+        <div class="showcase-grid" id="showcase-grid"></div>
+      </section>
+
+      <section class="features reveal" id="features" style="--delay: 240ms">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Why ShaderLoom</p>
+            <h2>ShaderToy vibe, different priorities</h2>
+            <p class="section-lead">
+              Built for modular graphs, multi-pass pipelines, and live iteration with structured controls.
+            </p>
+          </div>
+        </div>
+        <div class="feature-grid" id="feature-grid"></div>
+      </section>
+
+      <section class="workflow reveal" id="workflow" style="--delay: 300ms">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Workflow</p>
+            <h2>Design, wire, play</h2>
+            <p class="section-lead">Keep the flow fast while staying organized as the graph grows.</p>
+          </div>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <span class="step-index">01</span>
+            <div>
+              <h3>Pick a project</h3>
+              <p>Start from curated templates and tweak uniform controls instantly.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-index">02</span>
+            <div>
+              <h3>Wire the graph</h3>
+              <p>Connect passes and components with predictable I/O contracts.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-index">03</span>
+            <div>
+              <h3>Iterate in-place</h3>
+              <p>Edit shader code and JSON configs with instant visual feedback.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer reveal" style="--delay: 360ms">
+      <div>
+        <span class="brand-name" data-brand>ShaderLoom</span>
+        <p>Realtime shader graph lab for WebGL2 experiments.</p>
+      </div>
+      <div class="footer-links">
+        <a href="./app.html">Start looming</a>
+        <a href="#showcase">Showcase</a>
+        <a href="#features">Why ShaderLoom</a>
+      </div>
+    </footer>
   </div>
-  <script type="module" src="/src/main.ts"></script>
+  <script type="module" src="/src/landing.ts"></script>
 </body>
 </html>

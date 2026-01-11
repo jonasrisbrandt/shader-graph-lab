@@ -25,6 +25,7 @@ export type GraphSource = {
   components?: ComponentInstanceSource[];
   output: string;
   uiGroups?: Record<string, { label?: string; order?: number; collapsed?: boolean }>;
+  timeOffset?: number;
 };
 
 export type ProjectSource = {
@@ -39,6 +40,7 @@ export type GraphResolved = {
   components?: ComponentInstanceSource[];
   output: string;
   uiGroups?: Record<string, { label?: string; order?: number; collapsed?: boolean }>;
+  timeOffset?: number;
 };
 
 export type Project = {
@@ -557,6 +559,9 @@ function validateProjectSource(source: ProjectSource) {
         }
       }
     }
+    if ("timeOffset" in graphObj && graphObj.timeOffset !== undefined) {
+      assertNumber(graphObj.timeOffset, `${graphLabel}.timeOffset`);
+    }
   }
 }
 
@@ -772,6 +777,7 @@ function resolveGraphMap(sources: Record<string, GraphSource>, shaders: Record<s
       components: graph.components,
       output: graph.output,
       uiGroups: graph.uiGroups,
+      timeOffset: graph.timeOffset,
     };
   }
   return graphs;
@@ -895,5 +901,5 @@ export function buildGraphFromProject(project: Project, graphName: string) {
   }
 
   const outputRef = resolveGraphRef(graph.output, componentOutputs);
-  return builder.output(outputRef).build(graph.uiGroups);
+  return builder.output(outputRef).build(graph.uiGroups, graph.timeOffset);
 }

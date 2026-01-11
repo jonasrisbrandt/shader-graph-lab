@@ -1,0 +1,45 @@
+{
+  "brand": "ShaderLoom",
+  "title": "ShaderLoom - Shader Graph Lab",
+  "eyebrow": "Render graphs for live shader sketches",
+  "tagline": "ShaderToy energy, but graph-first.",
+  "description": "Modular multi-pass shaders with JSON projects, reusable components, and a built-in editor.",
+  "cta": { "label": "Start looming", "href": "./app.html" },
+  "secondaryCta": { "label": "See a Project", "href": "./app.html?project=menger-sponge" },
+  "showcase": [
+    {
+      "id": "menger-sponge",
+      "description": "Fractal raymarching with soft shadow and AO.",
+      "previewTime": 2.0
+    },
+    {
+      "id": "metaballs-light",
+      "description": "Organic blobs with light, bloom, and tonemap.",
+      "previewTime": 3.0
+    },
+    {
+      "id": "mandelbrot-zoom",
+      "description": "Deep zoom with a multi-pass resolve pipeline.",
+      "previewTime": 10.0
+    },
+    {
+      "id": "noise-stack",
+      "description": "Layered noise building blocks for shader exploration.",
+      "previewTime": 1.0
+    }
+  ],
+  "features": [
+    {
+      "title": "Graph-first pipeline",
+      "body": "Compose passes and components with explicit IO contracts and validation."
+    },
+    {
+      "title": "Live controls",
+      "body": "Uniforms become UI sliders automatically, grouped and labeled for clarity."
+    },
+    {
+      "title": "Shader-centric editing",
+      "body": "Edit GLSL and JSON side-by-side with instant reloads and debug overlays."
+    }
+  ]
+}

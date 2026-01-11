@@ -26,6 +26,7 @@ export type Graph = {
   output: OutputRef;
   usageCounts: Map<string, number>;
   uiGroups?: Record<string, { label?: string; order?: number; collapsed?: boolean }>;
+  timeOffset?: number;
 };
 
 function parseRef(ref: string): OutputRef {
@@ -141,7 +142,10 @@ export class GraphBuilder {
     return this;
   }
 
-  build(uiGroups?: Record<string, { label?: string; order?: number; collapsed?: boolean }>): Graph {
+  build(
+    uiGroups?: Record<string, { label?: string; order?: number; collapsed?: boolean }>,
+    timeOffset?: number
+  ): Graph {
     if (!this.outputRef) {
       throw new Error("Graph output not set.");
     }
@@ -290,6 +294,7 @@ export class GraphBuilder {
       output: this.outputRef,
       usageCounts,
       uiGroups,
+      timeOffset,
     };
   }
 }

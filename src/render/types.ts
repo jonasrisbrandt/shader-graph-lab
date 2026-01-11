@@ -68,4 +68,5 @@ export type PassDef = {
 export type GraphDef = {
   passes: PassDef[];
   output: string;
+  timeOffset?: number;
 };

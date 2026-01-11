@@ -298,4 +298,14 @@
 - Resolved project/manifest URLs against the app base URL so GitHub Pages subpaths load `/projects` assets correctly.
 
 ## Update 2026-01-09
+- Added a landing page (`index.html`) plus an `app.html` entrypoint for the render/editor app, with a multi-page Vite build.
+- Added `public/landing.json` and landing UI code to drive the showcase grid and hero copy.
+
+## Update 2026-01-09
+- Added per-graph `timeOffset` support so `uTime` can start at a chosen value (useful for nicer thumbnails).
+
+## Update 2026-01-09
+- Landing showcase thumbnails now render real project frames with hover animation, driven by `landing.json` preview times.
+
+## Update 2026-01-09
 - Added a NaN/inf color sanitize step in the Menger shader to prevent black tiles from invalid outputs.
