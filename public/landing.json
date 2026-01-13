@@ -23,9 +23,9 @@
       "previewTime": 10.0
     },
     {
-      "id": "noise-stack",
-      "description": "Layered noise building blocks for shader exploration.",
-      "previewTime": 1.0
+      "id": "julia-morph",
+      "description": "Julia fractal morphing with smooth sinus parameter motion.",
+      "previewTime": 4.0
     }
   ],
   "features": [

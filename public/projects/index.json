@@ -53,6 +53,14 @@
       ]
     },
     {
+      "id": "julia-morph",
+      "name": "Julia Morph",
+      "files": [
+        "project.json",
+        "shaders/julia.frag.glsl"
+      ]
+    },
+    {
       "id": "menger-sponge",
       "name": "Menger Sponge",
       "files": [
