@@ -1,4 +1,7 @@
 import { CodeEditor } from "./code-editor";
+import type { UiBadge } from "../ui/components/ui-badge";
+import type { UiButton } from "../ui/components/ui-button";
+import type { UiSelect, UiSelectOption } from "../ui/components/ui-select";
 
 export type EditorProjectInfo = {
   id: string;
@@ -19,8 +22,8 @@ type EditorShellCallbacks = {
 export class EditorShell {
   private root: HTMLElement;
   private callbacks: EditorShellCallbacks;
-  private projectSelect: HTMLSelectElement;
-  private projectBadge: HTMLSpanElement;
+  private projectSelect: UiSelect;
+  private projectBadge: UiBadge;
   private fileList: HTMLDivElement;
   private tabBar: HTMLDivElement;
   private editor: CodeEditor;
@@ -28,8 +31,8 @@ export class EditorShell {
   private sidebar: HTMLDivElement;
   private body: HTMLDivElement;
   private sidebarStorageKey = "sgl:editorSidebar";
-  private saveButton: HTMLButtonElement;
-  private closeButton: HTMLButtonElement;
+  private saveButton: UiButton;
+  private closeButton: UiButton;
   private files: string[] = [];
   private tabs: string[] = [];
   private activeFile: string | null = null;
@@ -57,28 +60,28 @@ export class EditorShell {
     const projectLabel = document.createElement("span");
     projectLabel.textContent = "Project:";
     projectLabel.style.color = "var(--ui-muted)";
-    this.projectSelect = document.createElement("select");
-    this.projectSelect.className = "editor-select";
+    this.projectSelect = document.createElement("ui-select");
     this.projectSelect.addEventListener("change", () => {
       this.callbacks.onProjectChange(this.projectSelect.value);
     });
-    this.projectBadge = document.createElement("span");
-    this.projectBadge.className = "editor-badge";
+    this.projectBadge = document.createElement("ui-badge");
     projectRow.append(projectLabel, this.projectSelect, this.projectBadge);
     const headerActions = document.createElement("div");
     headerActions.style.display = "flex";
     headerActions.style.gap = "8px";
-    this.saveButton = document.createElement("button");
+    this.saveButton = document.createElement("ui-button");
     this.saveButton.type = "button";
-    this.saveButton.textContent = "Save";
-    this.saveButton.className = "editor-tab";
+    this.saveButton.label = "Save";
+    this.saveButton.variant = "primary";
+    this.saveButton.size = "sm";
     this.saveButton.addEventListener("click", () => {
       this.callbacks.onSave();
     });
-    this.closeButton = document.createElement("button");
+    this.closeButton = document.createElement("ui-button");
     this.closeButton.type = "button";
-    this.closeButton.textContent = "Close";
-    this.closeButton.className = "editor-tab";
+    this.closeButton.label = "Close";
+    this.closeButton.variant = "ghost";
+    this.closeButton.size = "sm";
     this.closeButton.title = "Close editor";
     this.closeButton.addEventListener("click", () => {
       this.callbacks.onClose();
@@ -107,7 +110,8 @@ export class EditorShell {
     const main = document.createElement("div");
     main.className = "editor-main";
     this.tabBar = document.createElement("div");
-    this.tabBar.className = "editor-tabs";
+    this.tabBar.className = "ui-tabbar";
+    this.tabBar.setAttribute("role", "tablist");
     const editorWrap = document.createElement("div");
     editorWrap.className = "editor-editor";
     this.editor = new CodeEditor({
@@ -132,26 +136,22 @@ export class EditorShell {
   }
 
   setProjectInfo(info: EditorProjectInfo) {
-    this.projectBadge.textContent = info.origin;
+    this.projectBadge.label = info.origin;
   }
 
   setProjectList(entries: EditorProjectInfo[], currentId: string) {
-    this.projectSelect.innerHTML = "";
     const sorted = entries.slice().sort((a, b) => {
       const nameOrder = a.name.localeCompare(b.name);
       if (nameOrder !== 0) return nameOrder;
       if (a.origin === b.origin) return 0;
       return a.origin === "local" ? -1 : 1;
     });
-    for (const entry of sorted) {
-      const option = document.createElement("option");
-      option.value = entry.id;
-      option.textContent = this.formatProjectLabel(entry);
-      if (entry.id === currentId) {
-        option.selected = true;
-      }
-      this.projectSelect.appendChild(option);
-    }
+    const options: UiSelectOption[] = sorted.map((entry) => ({
+      value: entry.id,
+      label: this.formatProjectLabel(entry),
+    }));
+    this.projectSelect.options = options;
+    this.projectSelect.value = currentId;
   }
 
   setProjectSelectEnabled(enabled: boolean) {
@@ -224,14 +224,12 @@ export class EditorShell {
   private renderFiles() {
     this.fileList.innerHTML = "";
     for (const path of this.files) {
-      const button = document.createElement("button");
+      const button = document.createElement("ui-button");
       button.type = "button";
-      button.className = "editor-file";
-      if (path === this.activeFile) {
-        button.classList.add("is-active");
-      }
+      button.variant = "list";
+      button.active = path === this.activeFile;
       const dirty = this.dirtyFiles.has(path);
-      button.textContent = dirty ? `${path} *` : path;
+      button.label = dirty ? `${path} *` : path;
       button.title = path;
       button.addEventListener("click", () => {
         this.callbacks.onSelectFile(path);
@@ -243,14 +241,12 @@ export class EditorShell {
   private renderTabs() {
     this.tabBar.innerHTML = "";
     for (const path of this.tabs) {
-      const tab = document.createElement("button");
+      const tab = document.createElement("ui-button");
       tab.type = "button";
-      tab.className = "editor-tab";
-      if (path === this.activeFile) {
-        tab.classList.add("is-active");
-      }
+      tab.variant = "tab";
+      tab.active = path === this.activeFile;
       const dirty = this.dirtyFiles.has(path);
-      tab.textContent = dirty ? `${this.tabLabel(path)} *` : this.tabLabel(path);
+      tab.label = dirty ? `${this.tabLabel(path)} *` : this.tabLabel(path);
       tab.title = path;
       tab.addEventListener("click", () => {
         this.callbacks.onSelectTab(path);

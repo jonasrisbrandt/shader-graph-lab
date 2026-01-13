@@ -1,48 +1,34 @@
-# Resume
-
-## Project Goal
-Build a WebGL2 fullscreen-pass render-graph framework for 2D shader experimentation with reusable components, a declarative project format, and a growing shader chunk library.
+# Resume Context
 
 ## Current State
-- Render-graph core in TypeScript with GraphBuilder/GraphRunner, texture pooling, input-sized outputs, and JSON project loader with includes.
-- Schema-lite validation for project JSON during load (assets, shaders, components, passes, sizes/formats/uniforms/refs).
-- Debug tooling: error overlay, debug overlay (toggle `d` / `?debug=1`), render scale via `?scale=`, and uniform type-gating to avoid mismatched uniforms.
-- UI grouping: `ui.label`/`ui.group` on uniforms and graph-level `uiGroups` (label/order/collapsed) supported and wired into UI.
-- Camera support: standard uniforms `uCameraPos/Target/Up/Fov`, orbit controller with mouse input, and `?camera=orbit|static`.
-- Shader chunk library expanded: math, coords, noise (fbm/turbulence/ridged), color, blend, post, SDF ops, plus SDF3D camera/raymarch/normal/shadow/AO/lighting helpers.
-- Chunk gallery project added to showcase chunks in a grid with tweakable controls.
-
-## Key Updates
-- New demo `metaballs-light` with 3–16 metaballs, lighting/shadow/AO, and bloom + tonemap via components, plus combine pass. Uses camera uniforms and orbit controls.
-- SDF3D demo updated to use camera uniforms and `sdf3d_camera.glsl`.
+- Added a landing page at `/` and moved the render/editor app to `/app.html` with a multi-page Vite build (`vite.config.ts`).
+- Landing page is driven by `public/landing.json` and rendered by `src/landing.ts` with styling in `src/ui/landing.css`.
+- Landing showcases now render **real project thumbnails** via the existing render stack:
+  - Each card initializes a WebGL2 canvas lazily, renders a still frame at `previewTime`, and animates on hover.
+  - Uses `loadProject`, `loadProjectAssets`, `buildGraphFromProject`, and `GraphRunner`.
+  - If WebGL2/project load fails, shows a generic warning overlay (no SVG project thumbs).
+- Added per-graph `timeOffset` support so `uTime` can start at a chosen value for better still frames.
+- Adopted Lit (light DOM) for editor UI components (buttons/selects/badges/tabs) while keeping lil-gui for render controls.
+- Editor header, tab bar, file list, and render-mode Edit button now use `ui-*` components from `src/ui/components`.
 
 ## Key Files
-- `src/render/runtime.ts`, `src/render/project.ts`, `src/render/graph.ts`
-- `src/main.ts`, `src/ui/uniforms.ts`, `src/ui/camera.ts`, `src/ui/debug-overlay.ts`, `src/ui/error-overlay.ts`
-- `public/projects/common/shaders/*` (chunk library)
-- `public/projects/chunk-gallery/*`
-- `public/projects/metaballs-light/*`
-- `public/projects/sdf3d-demo/shaders/raymarch.frag.glsl`
-- `docs/architecture.md`, `docs/notes.md`, `docs/resume.md`
+- Landing: `index.html`, `src/landing.ts`, `src/ui/landing.css`, `public/landing.json`
+- App entry: `app.html`
+- Graph time offset: `src/render/runtime.ts`, `src/render/project.ts`, `src/render/graph.ts`, `src/render/types.ts`
+- UI components: `src/ui/components/*`, `src/ui/components/components.css`
+- Editor UI: `src/editor-ui/editor-shell.ts`, `src/ui/editor.css`
+- Menger component: `public/projects/common/components/menger/*`
+- Project list: `public/projects/index.json`
 
-## Decisions (ADRs)
-- ADR-0001: Use Vite.
-- ADR-0002: Use WebGL2.
-- ADR-0003: Use TypeScript and gl-matrix.
-- ADR-0004: Input-sized outputs.
+## Notes / Decisions
+- ADRs added: `docs/decisions/ADR-0008-landing-page.md`, `ADR-0009-graph-time-offset.md`, `ADR-0010-landing-runtime-thumbnails.md`.
+- ADR added: `docs/decisions/ADR-0011-lit-ui-components.md` for Lit light-DOM UI components.
+- GitHub Pages deploy workflow added in `.github/workflows/deploy.yml` and `vite.config.ts` reads `VITE_BASE`.
+- Fixed project URL resolution for Pages subpaths in `src/editor/project-store.ts` and `src/main.ts`.
 
-## Open Questions
-- Whether to add richer tooling around shader include error mapping.
-- If/when to add a chunk manifest or auto-generated chunk catalog.
+## Latest Fix (Pending Verification)
+- Hover animation on landing thumbnails wasn't running because `resizeCanvasToDisplaySize()` only returned `true` when the size changed. Updated to return `true` whenever the canvas has a valid size so animation renders every frame (`src/landing.ts`).
+- Fixed `ui-button` light DOM rendering to avoid duplicated inline text and added hover background styling (`src/ui/components/ui-button.ts`, `src/ui/components/components.css`).
 
-## How to Run
-- `?project=chunk-gallery` (add `&debug=1` to see pass info)
-- `?project=metaballs-light&camera=orbit`
-- `?project=sdf3d-demo&camera=orbit`
-
-## Recent Work Summary
-- Implemented shader chunk library and chunk gallery.
-- Added camera uniforms + orbit controls and updated SDF3D demo.
-- Added `metaballs-light` project with bloom/tonemap components.
-- Implemented UI grouping via `uiGroups`.
-- Committed and pushed: `c913c07`.
+## Next Step
+- Quick visual check: editor header/tabs/file list + render-mode Edit button with new `ui-*` components.

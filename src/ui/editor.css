@@ -31,18 +31,6 @@ body.is-editing #app-resizer {
   top: 12px;
   left: 12px;
   z-index: 12;
-  background: var(--ui-panel-alt);
-  color: var(--ui-text);
-  border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius-sm);
-  padding: 6px 10px;
-  font: 12px/1.4 var(--ui-font-mono);
-  cursor: pointer;
-}
-
-#edit-toggle:hover,
-.editor-tab:hover {
-  border-color: var(--ui-accent);
 }
 
 body.is-editing #edit-toggle {
@@ -97,30 +85,6 @@ body.is-editing #editor-root {
   font-size: 11px;
 }
 
-.editor-select {
-  background: var(--ui-panel);
-  color: var(--ui-text);
-  border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius-sm);
-  padding: 4px 8px;
-  font: 12px/1.4 var(--ui-font-mono);
-}
-
-.editor-select:focus {
-  outline: none;
-  border-color: var(--ui-accent);
-}
-
-.editor-badge {
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: var(--ui-panel-alt);
-  color: var(--ui-muted);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 .editor-body {
   flex: 1;
   min-height: 0;
@@ -158,62 +122,11 @@ body.is-editing #editor-root {
   padding: 0 8px 12px 8px;
 }
 
-.editor-file {
-  width: 100%;
-  background: transparent;
-  color: inherit;
-  border: 1px solid transparent;
-  border-radius: var(--ui-radius-sm);
-  padding: 6px 8px;
-  text-align: left;
-  cursor: pointer;
-  font: inherit;
-}
-
-.editor-file:hover {
-  background: var(--ui-highlight);
-}
-
-.editor-file.is-active {
-  border-color: var(--ui-accent);
-  background: var(--ui-highlight-strong);
-}
-
 .editor-main {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-}
-
-.editor-tabs {
-  display: flex;
-  gap: 6px;
-  padding: 8px;
-  border-bottom: 1px solid var(--ui-border);
-  overflow-x: auto;
-  background: var(--ui-panel-alt);
-}
-
-.editor-tab {
-  border: 1px solid transparent;
-  background: var(--ui-panel-alt);
-  color: inherit;
-  padding: 6px 10px;
-  border-radius: var(--ui-radius-sm);
-  cursor: pointer;
-  font: inherit;
-  white-space: nowrap;
-}
-
-.editor-tab.is-active {
-  border-color: var(--ui-accent);
-  background: var(--ui-highlight-strong);
-}
-
-.editor-tab:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .editor-editor {

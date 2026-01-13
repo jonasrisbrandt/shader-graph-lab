@@ -309,3 +309,25 @@
 
 ## Update 2026-01-09
 - Added a NaN/inf color sanitize step in the Menger shader to prevent black tiles from invalid outputs.
+
+## Update 2026-01-11
+- Discussion: standardize editor UI components (buttons, selects, tabs, splitters, dialogs) while keeping lil-gui for auto-generated render controls.
+- Proposal: use Web Components (custom elements) for editor UI with shared CSS tokens; optionally adopt Lit for templating, or stay vanilla TS.
+- Proposal: add `@floating-ui/dom` for dropdown/popup positioning (small, framework-agnostic).
+- Next steps: pick the UI stack (vanilla custom elements vs Lit), define the first component list, and set up a `src/ui/components/` folder with base styles.
+- Discussion: potential future graph node viewer/designer should be treated as a custom canvas/SVG surface with its own interaction model, separate from standard UI components.
+
+## Update 2026-01-11
+- Added a `julia-morph` project with a smooth sinus-driven Julia parameter and a fixed framing (no zoom/rotation).
+- Landing showcase now swaps the noise stack card for the new Julia morph demo.
+- Added a `uMorph` uniform to manually control the Julia parameter (no time-driven morph).
+- Julia morph now uses `0.7885 * e^{i * c}` with `c` mapped from `uMorph` in `[0, 2π]`.
+- Julia morph now animates with a ping-pong curve that slows around the midpoint; `uMorph` controls morph speed.
+- Updated the Julia morph palette to use a dark blue background and more vibrant gradients for the fractal.
+- Added `uRotationSpeed` to rotate the Julia framing over time.
+- Added a sine-based zoom with `uZoomSpeed` and `uZoomDepth` (min/max) controls.
+- Added `uJuliaRadius` to control the Julia constant magnitude.
+
+## Update 2026-01-11
+- Decision: adopt Lit with light DOM for editor UI components (buttons/selects/badges) and keep lil-gui for auto render controls (ADR-0011).
+- Added initial UI component files under `src/ui/components` and wired them into the app entry.

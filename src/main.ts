@@ -3,6 +3,8 @@ import { loadProjectAssets } from "./render/assets";
 import { buildGraphFromProject, loadProject, loadProjectWithResolver } from "./render/project";
 import "./ui/reset.css";
 import "./ui/theme.css";
+import "./ui/components";
+import "./ui/components/components.css";
 import "./ui/editor.css";
 import "./ui/base.css";
 import "./ui/overlays.css";
@@ -69,7 +71,7 @@ async function start() {
   const renderRoot = document.getElementById("render-root");
   const appRoot = document.getElementById("app");
   const appResizer = document.getElementById("app-resizer");
-  const editToggle = document.getElementById("edit-toggle") as HTMLButtonElement | null;
+  const editToggle = document.getElementById("edit-toggle");
   const resizerControl =
     editorRoot && renderRoot && appRoot && appResizer
       ? setupAppResizer({

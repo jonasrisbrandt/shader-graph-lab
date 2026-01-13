@@ -34,11 +34,13 @@
 - Layout styles are split into `reset.css`, `base.css`, `editor.css`, `overlays.css`.
 - lil-gui is styled via the `.sgl-gui` class using the same tokens.
 - CodeMirror uses the VS Code dark theme for syntax coloring.
+- Editor UI components live in `src/ui/components` and are rendered with Lit in light DOM.
 
 ## Decisions
 - Use CodeMirror for syntax highlighting and editing.
 - Use IndexedDB for local project storage in production.
 - Keep UI CSS modular and token-driven for future theme support.
+- Use Lit (light DOM) for editor UI components to keep markup concise while preserving shared CSS tokens.
 
 ## Future
 - Theme switching can be added by changing `data-theme` on the document.
