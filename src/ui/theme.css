@@ -14,6 +14,7 @@
   --ui-radius-sm: 6px;
   --ui-highlight: rgba(255, 255, 255, 0.08);
   --ui-highlight-strong: rgba(255, 255, 255, 0.14);
+  --ui-toolbar-height: 38px;
   --ui-font-mono: Consolas, Menlo, Monaco, "Courier New", monospace;
 }
 
@@ -29,6 +30,7 @@
   --string-color: #8ec07c;
   --font-family: var(--ui-font-mono);
   --widget-border-radius: var(--ui-radius-sm);
+  --title-height: var(--ui-toolbar-height);
   border-radius: var(--ui-radius);
   border: 1px solid var(--ui-border);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
@@ -46,6 +48,22 @@
 .sgl-gui.root > .children > .lil-gui > .title,
 .sgl-gui.root > .children > .lil-gui.closed > .title {
   border: none;
+  min-height: var(--ui-toolbar-height);
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+}
+
+.sgl-gui.root > .children > .lil-gui.closed > .title::after {
+  display: none;
+}
+
+.sgl-gui.root > .children > .lil-gui > .title::after {
+  display: none;
+}
+
+.sgl-gui .title:focus {
+  text-decoration: none;
 }
 
 .sgl-gui .lil-gui + .controller {

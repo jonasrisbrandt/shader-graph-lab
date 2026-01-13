@@ -26,11 +26,28 @@ body.is-editing #app-resizer {
   position: relative;
 }
 
-#edit-toggle {
+.render-scale {
   position: absolute;
   top: 12px;
   left: 12px;
   z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--ui-toolbar-height);
+  padding: 6px 8px;
+  background: var(--ui-panel-alt);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  font: 12px/1.4 var(--ui-font-mono);
+  color: var(--ui-muted);
+}
+
+.render-scale-label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
 }
 
 body.is-editing #edit-toggle {
@@ -63,6 +80,7 @@ body.is-editing #editor-root {
   height: 100%;
   display: flex;
   flex-direction: column;
+  width: 100%;
   font: 12px/1.5 var(--ui-font-mono);
 }
 
@@ -73,6 +91,31 @@ body.is-editing #editor-root {
   flex-direction: column;
   gap: 4px;
   background: var(--ui-panel-alt);
+}
+
+.editor-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.editor-project-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.editor-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-files-toggle {
+  display: none;
 }
 
 .editor-header-title {
@@ -153,4 +196,55 @@ body.is-editing #editor-root {
 body.is-resizing {
   cursor: col-resize;
   user-select: none;
+}
+
+@media (max-width: 900px) {
+  body.is-editing #render-root {
+    display: none;
+  }
+
+  body.is-editing #editor-root {
+    flex: 1 1 auto;
+    width: 100%;
+    border-right: 0;
+    transform: none;
+  }
+
+  body.is-editing #app-resizer {
+    display: none;
+  }
+
+  .editor-files-toggle {
+    display: inline-flex;
+  }
+
+  .editor-body {
+    position: relative;
+  }
+
+  .editor-sidebar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 240px;
+    max-width: 80%;
+    transform: translateX(-100%);
+    transition: transform 160ms ease;
+    z-index: 5;
+    background: var(--ui-panel);
+    box-shadow: 0 12px 28px var(--ui-shadow);
+  }
+
+  .editor-shell[data-sidebar="open"] .editor-sidebar {
+    transform: translateX(0);
+  }
+
+  .editor-resizer {
+    display: none;
+  }
+
+  #app-resizer {
+    display: none;
+  }
 }

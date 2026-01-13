@@ -21,6 +21,7 @@ type EditorShellCallbacks = {
 
 export class EditorShell {
   private root: HTMLElement;
+  private shell: HTMLDivElement;
   private callbacks: EditorShellCallbacks;
   private projectSelect: UiSelect;
   private projectBadge: UiBadge;
@@ -31,12 +32,17 @@ export class EditorShell {
   private sidebar: HTMLDivElement;
   private body: HTMLDivElement;
   private sidebarStorageKey = "sgl:editorSidebar";
+  private sidebarOpenKey = "sgl:editorSidebarOpen";
   private saveButton: UiButton;
   private closeButton: UiButton;
+  private filesToggleButton: UiButton;
   private files: string[] = [];
   private tabs: string[] = [];
   private activeFile: string | null = null;
   private dirtyFiles = new Set<string>();
+  private sidebarOpen = true;
+  private mobileQuery: MediaQueryList;
+  private handleMobileQuery: (event: MediaQueryListEvent) => void;
 
   constructor(root: HTMLElement, callbacks: EditorShellCallbacks) {
     this.root = root;
@@ -45,18 +51,14 @@ export class EditorShell {
 
     const shell = document.createElement("div");
     shell.className = "editor-shell";
+    this.shell = shell;
 
     const header = document.createElement("div");
     header.className = "editor-header";
     const headerRow = document.createElement("div");
-    headerRow.style.display = "flex";
-    headerRow.style.alignItems = "center";
-    headerRow.style.justifyContent = "space-between";
-    headerRow.style.gap = "12px";
+    headerRow.className = "editor-header-row";
     const projectRow = document.createElement("div");
-    projectRow.style.display = "flex";
-    projectRow.style.alignItems = "center";
-    projectRow.style.gap = "8px";
+    projectRow.className = "editor-project-row";
     const projectLabel = document.createElement("span");
     projectLabel.textContent = "Project:";
     projectLabel.style.color = "var(--ui-muted)";
@@ -67,8 +69,7 @@ export class EditorShell {
     this.projectBadge = document.createElement("ui-badge");
     projectRow.append(projectLabel, this.projectSelect, this.projectBadge);
     const headerActions = document.createElement("div");
-    headerActions.style.display = "flex";
-    headerActions.style.gap = "8px";
+    headerActions.className = "editor-header-actions";
     this.saveButton = document.createElement("ui-button");
     this.saveButton.type = "button";
     this.saveButton.label = "Save";
@@ -86,7 +87,16 @@ export class EditorShell {
     this.closeButton.addEventListener("click", () => {
       this.callbacks.onClose();
     });
-    headerActions.append(this.saveButton, this.closeButton);
+    this.filesToggleButton = document.createElement("ui-button");
+    this.filesToggleButton.type = "button";
+    this.filesToggleButton.label = "Files";
+    this.filesToggleButton.variant = "ghost";
+    this.filesToggleButton.size = "sm";
+    this.filesToggleButton.className = "editor-files-toggle";
+    this.filesToggleButton.addEventListener("click", () => {
+      this.toggleSidebar();
+    });
+    headerActions.append(this.filesToggleButton, this.saveButton, this.closeButton);
     headerRow.append(projectRow, headerActions);
     header.append(headerRow);
 
@@ -133,6 +143,13 @@ export class EditorShell {
 
     this.setupSidebarResizer(resizer);
     this.updateSaveButton();
+
+    this.mobileQuery = window.matchMedia("(max-width: 900px)");
+    this.handleMobileQuery = (event) => {
+      this.syncSidebarToViewport(event.matches);
+    };
+    this.mobileQuery.addEventListener("change", this.handleMobileQuery);
+    this.syncSidebarToViewport(this.mobileQuery.matches);
   }
 
   setProjectInfo(info: EditorProjectInfo) {
@@ -218,6 +235,7 @@ export class EditorShell {
 
   dispose() {
     this.editor.destroy();
+    this.mobileQuery.removeEventListener("change", this.handleMobileQuery);
     this.root.innerHTML = "";
   }
 
@@ -233,6 +251,9 @@ export class EditorShell {
       button.title = path;
       button.addEventListener("click", () => {
         this.callbacks.onSelectFile(path);
+        if (this.isMobile()) {
+          this.setSidebarOpen(false);
+        }
       });
       this.fileList.appendChild(button);
     }
@@ -275,6 +296,50 @@ export class EditorShell {
     const enabled = this.activeFile !== null && this.dirtyFiles.has(this.activeFile);
     this.saveButton.disabled = !enabled;
     this.saveButton.title = enabled ? "Save (Ctrl/Cmd+S)" : "No changes";
+  }
+
+  private isMobile() {
+    return this.mobileQuery.matches;
+  }
+
+  private syncSidebarToViewport(isMobile: boolean) {
+    if (isMobile) {
+      const stored = this.loadStoredSidebarOpen();
+      this.setSidebarOpen(stored ?? false, false);
+    } else {
+      this.setSidebarOpen(true, false);
+    }
+  }
+
+  private toggleSidebar() {
+    this.setSidebarOpen(!this.sidebarOpen);
+  }
+
+  private setSidebarOpen(open: boolean, persist = true) {
+    this.sidebarOpen = open;
+    this.shell.dataset.sidebar = open ? "open" : "closed";
+    this.filesToggleButton.active = open;
+    if (persist && this.isMobile()) {
+      this.saveStoredSidebarOpen(open);
+    }
+  }
+
+  private loadStoredSidebarOpen() {
+    try {
+      const raw = window.localStorage.getItem(this.sidebarOpenKey);
+      if (!raw) return null;
+      return raw === "true";
+    } catch {
+      return null;
+    }
+  }
+
+  private saveStoredSidebarOpen(open: boolean) {
+    try {
+      window.localStorage.setItem(this.sidebarOpenKey, String(open));
+    } catch {
+      return;
+    }
   }
 
   private formatProjectLabel(info: EditorProjectInfo) {

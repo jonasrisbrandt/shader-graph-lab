@@ -48,7 +48,12 @@ export function createUniformUI(graph: Graph, options?: { container?: HTMLElemen
   }
   gui.domElement.classList.add("sgl-gui");
   const rootFolder = gui.addFolder("Controls");
-  rootFolder.open();
+  const isMobile = window.matchMedia("(max-width: 900px)").matches;
+  if (isMobile) {
+    rootFolder.close();
+  } else {
+    rootFolder.open();
+  }
   const folders = new Map<string, GUI>();
   const groupMeta = graph.uiGroups ?? {};
 

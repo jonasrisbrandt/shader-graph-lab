@@ -331,3 +331,9 @@
 ## Update 2026-01-11
 - Decision: adopt Lit with light DOM for editor UI components (buttons/selects/badges) and keep lil-gui for auto render controls (ADR-0011).
 - Added initial UI component files under `src/ui/components` and wired them into the app entry.
+
+## Update 2026-01-11
+- Mobile UX work: default collapse lil-gui controls on small screens, hide render root in edit mode, and add a toggleable file-tree drawer for the editor sidebar.
+
+## Update 2026-01-11
+- Added a render-scale control near the Edit button with defaults of 1 (desktop) and 0.5 (mobile), plus URL/localStorage sync.

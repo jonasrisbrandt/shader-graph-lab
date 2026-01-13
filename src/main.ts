@@ -21,6 +21,7 @@ import {
   stripLocalPrefix,
 } from "./editor/project-store";
 import { setupAppResizer } from "./editor-ui/resizers";
+import type { UiSelect } from "./ui/components/ui-select";
 
 const canvas = document.getElementById("gl-canvas") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2");
@@ -57,8 +58,35 @@ async function start() {
   const debugParam = params.get("debug");
   const cameraParam = params.get("camera") ?? "orbit";
   const editParam = params.get("edit");
-  const renderScale = scaleParam ? Number.parseFloat(scaleParam) : 1;
-  outputScale = Number.isFinite(renderScale) && renderScale > 0 ? renderScale : 1;
+  const scaleStorageKey = "sgl:renderScale";
+  const scaleOptions = [0.5, 0.75, 1, 1.25, 1.5, 2];
+  const parseScale = (value: string | null) => {
+    if (!value) return null;
+    const parsed = Number.parseFloat(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) return null;
+    return parsed;
+  };
+  const loadStoredScale = () => {
+    try {
+      const raw = window.localStorage.getItem(scaleStorageKey);
+      return parseScale(raw);
+    } catch {
+      return null;
+    }
+  };
+  const saveStoredScale = (value: number) => {
+    try {
+      window.localStorage.setItem(scaleStorageKey, String(value));
+    } catch {
+      return;
+    }
+  };
+  const mobileQuery = window.matchMedia("(max-width: 900px)");
+  const defaultScale = mobileQuery.matches ? 0.5 : 1;
+  const paramScale = parseScale(scaleParam);
+  const storedScale = loadStoredScale();
+  const initialScale = paramScale ?? storedScale ?? defaultScale;
+  outputScale = initialScale;
   debugEnabled = debugParam === "1" || debugParam === "true";
   debugOverlay.setVisible(debugEnabled);
   const editEnabled = editParam === "1" || editParam === "true";
@@ -72,6 +100,7 @@ async function start() {
   const appRoot = document.getElementById("app");
   const appResizer = document.getElementById("app-resizer");
   const editToggle = document.getElementById("edit-toggle");
+  const scaleSelect = document.getElementById("scale-select") as UiSelect | null;
   const resizerControl =
     editorRoot && renderRoot && appRoot && appResizer
       ? setupAppResizer({
@@ -134,7 +163,17 @@ async function start() {
     }
     window.history.replaceState({}, "", url);
     if (enabled) {
-      resizerControl?.applyStoredWidth();
+      if (mobileQuery.matches) {
+        if (editorRoot) {
+          editorRoot.style.flex = "";
+          editorRoot.style.width = "";
+        }
+        if (renderRoot) {
+          renderRoot.style.flex = "";
+        }
+      } else {
+        resizerControl?.applyStoredWidth();
+      }
       if (editorRoot) {
         const flexValue = editorRoot.style.flex;
         if (!flexValue || flexValue === "0 0 0px" || flexValue === "0 0 0") {
@@ -191,6 +230,38 @@ async function start() {
     setEditMode(true);
   });
 
+  if (scaleSelect) {
+    const options = scaleOptions.slice();
+    if (!options.includes(initialScale)) {
+      options.unshift(initialScale);
+    }
+    scaleSelect.options = options.map((value) => ({
+      value: String(value),
+      label: `${value}x`,
+    }));
+    scaleSelect.value = String(initialScale);
+    scaleSelect.addEventListener("change", () => {
+      const nextScale = parseScale(scaleSelect.value) ?? defaultScale;
+      outputScale = nextScale;
+      resizeCanvas(outputScale);
+      saveStoredScale(nextScale);
+      const url = new URL(window.location.href);
+      url.searchParams.set("scale", String(nextScale));
+      window.history.replaceState({}, "", url);
+    });
+  }
+
+  mobileQuery.addEventListener("change", () => {
+    if (!document.body.classList.contains("is-editing")) return;
+    if (editorRoot) {
+      editorRoot.style.flex = "";
+      editorRoot.style.width = "";
+    }
+    if (renderRoot) {
+      renderRoot.style.flex = "";
+    }
+  });
+
   setEditMode(editEnabled);
 
   cameraController?.dispose();
@@ -211,6 +282,7 @@ async function start() {
 
   
 
+  resizeCanvas(outputScale);
   await loadProjectForRender(currentProjectId);
   let lastFrameMs = 0;
   let fps = 0;

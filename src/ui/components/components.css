@@ -67,6 +67,11 @@ ui-badge {
   border-color: var(--ui-border);
 }
 
+.ui-button[data-variant="ghost"][data-active="true"] {
+  border-color: var(--ui-accent);
+  background: var(--ui-highlight);
+}
+
 .ui-button[data-variant="list"] {
   width: 100%;
   justify-content: flex-start;

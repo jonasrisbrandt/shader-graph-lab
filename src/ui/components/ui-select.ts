@@ -32,7 +32,11 @@ export class UiSelect extends UiElement {
     >
       ${this.options.map(
         (option) =>
-          html`<option value=${option.value} ?disabled=${option.disabled}>
+          html`<option
+            value=${option.value}
+            ?disabled=${option.disabled}
+            ?selected=${option.value === this.value}
+          >
             ${option.label}
           </option>`
       )}

@@ -8,7 +8,11 @@
 <body>
   <div id="app">
     <div id="render-root">
-      <ui-button id="edit-toggle" type="button" variant="ghost" size="sm">Edit</ui-button>
+      <div id="scale-control" class="render-scale">
+        <ui-button id="edit-toggle" type="button" variant="ghost" size="sm">Edit</ui-button>
+        <span class="render-scale-label">Scale</span>
+        <ui-select id="scale-select"></ui-select>
+      </div>
       <canvas id="gl-canvas"></canvas>
     </div>
     <div id="editor-root"></div>
