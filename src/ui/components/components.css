@@ -33,12 +33,8 @@ ui-badge {
   font-size: 11px;
 }
 
-.ui-button:hover {
-  border-color: var(--ui-accent);
-}
-
-.ui-button:hover:not([data-variant="primary"]):not([data-variant="list"]) {
-  background: var(--ui-highlight);
+.ui-button:hover:not([data-variant="primary"]) {
+  background: var(--ui-hover);
 }
 
 .ui-button:focus-visible {
@@ -59,7 +55,6 @@ ui-badge {
 
 .ui-button[data-variant="primary"]:hover {
   background: var(--ui-accent-strong);
-  border-color: var(--ui-accent-strong);
 }
 
 .ui-button[data-variant="ghost"] {
@@ -81,8 +76,7 @@ ui-badge {
 }
 
 .ui-button[data-variant="list"]:hover {
-  background: var(--ui-highlight);
-  border-color: transparent;
+  background: var(--ui-hover);
 }
 
 .ui-button[data-variant="list"][data-active="true"] {
@@ -91,8 +85,8 @@ ui-badge {
 }
 
 .ui-button[data-variant="icon"] {
-  width: 28px;
-  height: 28px;
+  width: var(--ui-toolbar-height);
+  height: var(--ui-toolbar-height);
   padding: 0;
 }
 
@@ -101,6 +95,12 @@ ui-badge {
   align-items: center;
   justify-content: center;
   line-height: 1;
+}
+
+.ui-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
 }
 
 .ui-button[data-variant="tab"] {
@@ -134,6 +134,10 @@ ui-badge {
 .ui-select:focus {
   outline: none;
   border-color: var(--ui-accent);
+}
+
+.ui-select:hover {
+  background: var(--ui-hover);
 }
 
 .ui-badge {

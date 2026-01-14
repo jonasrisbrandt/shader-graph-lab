@@ -1,6 +1,8 @@
 import { html } from "lit";
 import { ifDefined } from "lit/directives/if-defined.js";
+import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 import { UiElement } from "./element";
+import { getIconSvg } from "../icons";
 
 export class UiIconButton extends UiElement {
   static properties = {
@@ -17,19 +19,9 @@ export class UiIconButton extends UiElement {
   disabled = false;
   type = "button";
 
-  connectedCallback() {
-    super.connectedCallback();
-    if (!this.icon && !this.querySelector(".ui-icon-button")) {
-      const text = this.textContent?.trim();
-      if (text) {
-        this.icon = text;
-        this.textContent = "";
-      }
-    }
-  }
-
   render() {
     const accessibleLabel = this.label || undefined;
+    const iconSvg = this.icon ? getIconSvg(this.icon) : "";
     return html`<button
       class="ui-button ui-icon-button"
       data-variant="icon"
@@ -39,7 +31,7 @@ export class UiIconButton extends UiElement {
       aria-label=${ifDefined(accessibleLabel)}
       title=${ifDefined(accessibleLabel)}
     >
-      <span class="ui-icon" aria-hidden="true">${this.icon}</span>
+      <span class="ui-icon" aria-hidden="true">${unsafeSVG(iconSvg)}</span>
     </button>`;
   }
 }

@@ -26,32 +26,95 @@ body.is-editing #app-resizer {
   position: relative;
 }
 
-.render-scale {
+.render-menu {
   position: absolute;
   top: 12px;
   left: 12px;
   z-index: 12;
+}
+
+.render-menu[data-open="true"] #menu-toggle .ui-button {
+  border-color: var(--ui-accent);
+  background: var(--ui-highlight);
+}
+
+.render-menu #menu-toggle .ui-icon svg {
+  display: block;
+  transform-origin: center;
+}
+
+.render-menu-panel {
+  position: absolute;
+  top: calc(var(--ui-toolbar-height) + 8px);
+  left: 0;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: var(--ui-toolbar-height);
-  padding: 6px 8px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+  padding: 8px;
   background: var(--ui-panel-alt);
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-sm);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.render-menu[data-open="true"] .render-menu-panel {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.render-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: var(--ui-radius-sm);
+  border: 1px solid transparent;
   font: 12px/1.4 var(--ui-font-mono);
+  color: var(--ui-text);
+  text-decoration: none;
+  background: var(--ui-panel);
+  cursor: pointer;
+}
+
+.render-menu-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
   color: var(--ui-muted);
 }
 
-.render-scale-label {
+.render-menu-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+}
+
+.render-menu-item:hover .render-menu-icon {
+  color: var(--ui-text);
+}
+
+.render-menu-item:hover {
+  background: var(--ui-hover);
+}
+
+.render-menu-scale {
+  justify-content: space-between;
+  background: var(--ui-panel-alt);
+  border-color: var(--ui-border);
+  cursor: default;
+}
+
+.render-menu-label {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-size: 10px;
-}
-
-body.is-editing #edit-toggle {
-  display: none;
 }
 
 #editor-root {
@@ -199,6 +262,10 @@ body.is-resizing {
 }
 
 @media (max-width: 900px) {
+  body.is-menu-open .sgl-gui {
+    display: none;
+  }
+
   body.is-editing #render-root {
     display: none;
   }
@@ -246,5 +313,9 @@ body.is-resizing {
 
   #app-resizer {
     display: none;
+  }
+
+  .render-menu-panel {
+    min-width: min(260px, calc(100vw - 24px));
   }
 }

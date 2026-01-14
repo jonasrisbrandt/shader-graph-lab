@@ -8,10 +8,22 @@
 <body>
   <div id="app">
     <div id="render-root">
-      <div id="scale-control" class="render-scale">
-        <ui-button id="edit-toggle" type="button" variant="ghost" size="sm">Edit</ui-button>
-        <span class="render-scale-label">Scale</span>
-        <ui-select id="scale-select"></ui-select>
+      <div id="render-menu" class="render-menu" data-open="false">
+        <ui-icon-button id="menu-toggle" type="button" icon="menu" label="Menu" size="sm"></ui-icon-button>
+        <div id="menu-panel" class="render-menu-panel" role="menu" aria-hidden="true">
+          <a class="render-menu-item" id="menu-home" href="index.html" role="menuitem">
+            <span class="render-menu-icon" data-icon="home" aria-hidden="true"></span>
+            Home
+          </a>
+          <button class="render-menu-item" id="menu-edit" type="button" role="menuitem">
+            <span class="render-menu-icon" data-icon="edit" aria-hidden="true"></span>
+            Edit
+          </button>
+          <div class="render-menu-item render-menu-scale">
+            <span class="render-menu-label">Scale</span>
+            <ui-select id="scale-select"></ui-select>
+          </div>
+        </div>
       </div>
       <canvas id="gl-canvas"></canvas>
     </div>

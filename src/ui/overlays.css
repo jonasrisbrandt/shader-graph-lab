@@ -55,5 +55,5 @@
 }
 
 .overlay-dismiss:hover {
-  border-color: var(--ui-accent);
+  background: var(--ui-hover);
 }

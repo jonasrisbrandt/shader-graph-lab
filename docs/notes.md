@@ -340,3 +340,9 @@
 
 ## Update 2026-01-11
 - Added cache-busting for public JSON/shader includes/assets using a build id so fresh deploys load without manual cache clears.
+
+## Update 2026-01-11
+- Render UI: replaced the mobile toolbar with a hamburger dropdown menu (Home/Edit/Scale) and hide lil-gui controls on mobile while the menu is open; same menu works on desktop without hiding controls.
+
+## Update 2026-01-11
+- Added Lucide icon set and wired a small icon helper for UI buttons (menu icon).

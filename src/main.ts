@@ -23,6 +23,7 @@ import {
 import { setupAppResizer } from "./editor-ui/resizers";
 import type { UiSelect } from "./ui/components/ui-select";
 import { withCacheBust } from "./utils/cache-bust";
+import { getIconSvg } from "./ui/icons";
 
 const canvas = document.getElementById("gl-canvas") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2");
@@ -100,7 +101,11 @@ async function start() {
   const renderRoot = document.getElementById("render-root");
   const appRoot = document.getElementById("app");
   const appResizer = document.getElementById("app-resizer");
-  const editToggle = document.getElementById("edit-toggle");
+  const renderMenu = document.getElementById("render-menu");
+  const menuToggle = document.getElementById("menu-toggle");
+  const menuPanel = document.getElementById("menu-panel");
+  const menuEdit = document.getElementById("menu-edit");
+  const menuIconNodes = document.querySelectorAll<HTMLElement>("[data-icon]");
   const scaleSelect = document.getElementById("scale-select") as UiSelect | null;
   const resizerControl =
     editorRoot && renderRoot && appRoot && appResizer
@@ -227,9 +232,52 @@ async function start() {
     }
   };
 
-  editToggle?.addEventListener("click", () => {
+  let menuOpen = false;
+  const setMenuOpen = (open: boolean) => {
+    menuOpen = open;
+    document.body.classList.toggle("is-menu-open", open);
+    if (renderMenu) {
+      renderMenu.dataset.open = open ? "true" : "false";
+    }
+    if (menuPanel) {
+      menuPanel.setAttribute("aria-hidden", open ? "false" : "true");
+    }
+    if (menuToggle) {
+      menuToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+  };
+
+  const toggleMenu = (event?: Event) => {
+    event?.stopPropagation();
+    setMenuOpen(!menuOpen);
+  };
+
+  for (const node of menuIconNodes) {
+    const iconName = node.dataset.icon;
+    if (!iconName) continue;
+    node.innerHTML = getIconSvg(iconName);
+  }
+
+  menuToggle?.addEventListener("click", toggleMenu);
+  menuEdit?.addEventListener("click", () => {
+    setMenuOpen(false);
     setEditMode(true);
   });
+
+  document.addEventListener("click", (event) => {
+    if (!menuOpen) return;
+    const target = event.target as Node | null;
+    if (target && renderMenu?.contains(target)) return;
+    setMenuOpen(false);
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setMenuOpen(false);
+    }
+  });
+
+  setMenuOpen(false);
 
   if (scaleSelect) {
     const options = scaleOptions.slice();
