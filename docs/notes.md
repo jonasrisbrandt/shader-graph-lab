@@ -349,3 +349,7 @@
 
 ## Update 2026-01-11
 - Added touch gesture support to the orbit camera (one-finger rotate, two-finger pan + pinch zoom) and disabled touch scrolling on the render canvas.
+
+## Update 2026-01-14
+- Added component-local shader maps in component JSON; component pass refs resolve against component shaders before project shaders.
+- Moved common component shader includes into their component JSON and trimmed project shader lists.

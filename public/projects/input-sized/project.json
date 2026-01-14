@@ -1,7 +1,6 @@
 {
   "shaders": {
     "grid": { "$include": "./shaders/grid.frag.glsl" },
-    "blit": { "$include": "../common/components/down-up/shaders/blit.frag.glsl" },
     "composite": { "$include": "./shaders/composite.frag.glsl" }
   },
   "components": {

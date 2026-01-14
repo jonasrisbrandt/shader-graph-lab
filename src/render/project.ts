@@ -10,7 +10,10 @@ export type FragmentSource = string | IncludeRef | Ref;
 
 export type PassSource = Omit<PassDef, "fragment"> & { fragment: FragmentSource };
 
-export type ComponentSpecSource = Omit<ComponentSpec, "passes"> & { passes: PassSource[] };
+export type ComponentSpecSource = Omit<ComponentSpec, "passes"> & {
+  passes: PassSource[];
+  shaders?: Record<string, FragmentSource>;
+};
 
 export type ComponentSource = ComponentSpecSource | IncludeRef;
 
@@ -397,6 +400,9 @@ function validateComponentSpecSource(value: unknown, label: string) {
   for (const [key, output] of Object.entries(outputs)) {
     validateComponentOutputSpec(output, `${label}.outputs.${key}`);
   }
+  if ("shaders" in spec && spec.shaders !== undefined) {
+    validateShaderMap(spec.shaders, `${label}.shaders`);
+  }
   if (!Array.isArray(spec.passes)) {
     throw new Error(`${label}.passes must be an array.`);
   }
@@ -723,8 +729,11 @@ function resolvePasses(passes: PassSource[], shaders: Record<string, string>): P
   }));
 }
 
-function resolveShaderMap(sources: Record<string, FragmentSource>): Record<string, string> {
-  const shaders: Record<string, string> = {};
+function resolveShaderMap(
+  sources: Record<string, FragmentSource>,
+  base: Record<string, string> = {}
+): Record<string, string> {
+  const shaders: Record<string, string> = { ...base };
   for (const [name, source] of Object.entries(sources)) {
     if (typeof source === "string") {
       shaders[name] = source;
@@ -762,9 +771,11 @@ function resolveComponentMap(
       throw new Error(`Component "${name}" is missing passes.`);
     }
     const specSource = source as ComponentSpecSource;
+    const { shaders: shaderSources, passes: passSources, ...specRest } = specSource;
+    const componentShaders = resolveShaderMap(shaderSources ?? {}, shaders);
     components[name] = {
-      ...specSource,
-      passes: resolvePasses(specSource.passes, shaders),
+      ...specRest,
+      passes: resolvePasses(passSources, componentShaders),
     };
   }
   return components;

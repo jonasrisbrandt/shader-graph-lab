@@ -1,7 +1,4 @@
 {
-  "shaders": {
-    "menger": { "$include": "../common/components/menger/shaders/menger.frag.glsl" }
-  },
   "components": {
     "menger": { "$include": "../common/components/menger/component.json" }
   },

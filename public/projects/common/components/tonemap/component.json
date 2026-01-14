@@ -1,5 +1,8 @@
 {
   "name": "tonemap",
+  "shaders": {
+    "tonemap": { "$include": "./shaders/tonemap.frag.glsl" }
+  },
   "inputs": {
     "src": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" },
     "lut": { "format": "rgba8", "size": { "kind": "custom", "width": 256, "height": 16 }, "filter": "linear" }

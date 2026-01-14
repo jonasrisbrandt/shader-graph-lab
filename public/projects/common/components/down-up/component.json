@@ -1,5 +1,8 @@
 {
   "name": "downUp",
+  "shaders": {
+    "blit": { "$include": "./shaders/blit.frag.glsl" }
+  },
   "inputs": {
     "src": { "format": "rgba8", "size": { "kind": "full" }, "filter": "linear" }
   },

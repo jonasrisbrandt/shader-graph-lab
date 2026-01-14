@@ -1,5 +1,8 @@
 {
   "name": "menger",
+  "shaders": {
+    "menger": { "$include": "./shaders/menger.frag.glsl" }
+  },
   "inputs": {},
   "outputs": {
     "color": {

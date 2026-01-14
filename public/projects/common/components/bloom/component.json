@@ -1,5 +1,11 @@
 {
   "name": "bloom",
+  "shaders": {
+    "threshold": { "$include": "./shaders/threshold.frag.glsl" },
+    "downsample": { "$include": "./shaders/downsample.frag.glsl" },
+    "blur": { "$include": "./shaders/blur.frag.glsl" },
+    "bloomCombine": { "$include": "./shaders/bloom-combine.frag.glsl" }
+  },
   "inputs": {
     "src": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" }
   },

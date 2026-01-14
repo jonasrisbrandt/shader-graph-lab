@@ -55,6 +55,7 @@ Graph Definition -> Graph Runner -> Pass Execution -> Texture Pool -> Framebuffe
 ## Project Loader
 - Optional JSON project files can define shaders, components, and graphs.
 - Includes resolve external GLSL and component JSON files.
+- Components may define local `shaders` maps; component pass refs resolve locally before project shaders.
 - Loader compiles declarative graphs into the same runtime GraphBuilder.
 - Usage (Vite dev server): `?project=/projects/input-sized/project.json` and optional `&graph=main`.
 

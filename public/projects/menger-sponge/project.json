@@ -8,13 +8,7 @@
     }
   },
   "shaders": {
-    "menger": { "$include": "../common/components/menger/shaders/menger.frag.glsl" },
-    "combine": { "$include": "../circle-bloom/shaders/combine.frag.glsl" },
-    "threshold": { "$include": "../common/components/bloom/shaders/threshold.frag.glsl" },
-    "downsample": { "$include": "../common/components/bloom/shaders/downsample.frag.glsl" },
-    "blur": { "$include": "../common/components/bloom/shaders/blur.frag.glsl" },
-    "bloomCombine": { "$include": "../common/components/bloom/shaders/bloom-combine.frag.glsl" },
-    "tonemap": { "$include": "../common/components/tonemap/shaders/tonemap.frag.glsl" }
+    "combine": { "$include": "../circle-bloom/shaders/combine.frag.glsl" }
   },
   "components": {
     "menger": { "$include": "../common/components/menger/component.json" },
