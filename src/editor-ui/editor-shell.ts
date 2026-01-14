@@ -2,6 +2,8 @@ import { CodeEditor } from "./code-editor";
 import type { UiBadge } from "../ui/components/ui-badge";
 import type { UiButton } from "../ui/components/ui-button";
 import type { UiSelect, UiSelectOption } from "../ui/components/ui-select";
+import { getIconSvg } from "../ui/icons";
+import type { EditorFileEntry, EditorFileNode, EditorFileSection } from "../editor/file-tree";
 
 export type EditorProjectInfo = {
   id: string;
@@ -17,6 +19,7 @@ type EditorShellCallbacks = {
   onSave: () => void;
   onClose: () => void;
   onProjectChange: (projectId: string) => void;
+  onImportComponent: (componentName: string) => void;
 };
 
 export class EditorShell {
@@ -29,16 +32,24 @@ export class EditorShell {
   private tabBar: HTMLDivElement;
   private editor: CodeEditor;
   private status: HTMLDivElement;
+  private statusLabel: HTMLSpanElement;
+  private statusActions: HTMLDivElement;
+  private importButton: UiButton;
+  private activeComponent: string | null = null;
   private sidebar: HTMLDivElement;
   private body: HTMLDivElement;
   private sidebarStorageKey = "sgl:editorSidebar";
   private sidebarOpenKey = "sgl:editorSidebarOpen";
+  private treeStateKey = "sgl:editorTreeState";
+  private treeState = new Map<string, boolean>();
   private saveButton: UiButton;
   private closeButton: UiButton;
   private filesToggleButton: UiButton;
-  private files: string[] = [];
+  private fileSections: EditorFileSection[] = [];
+  private fileIndex = new Map<string, EditorFileEntry>();
   private tabs: string[] = [];
   private activeFile: string | null = null;
+  private activeEntry: EditorFileEntry | null = null;
   private dirtyFiles = new Set<string>();
   private sidebarOpen = true;
   private mobileQuery: MediaQueryList;
@@ -137,6 +148,25 @@ export class EditorShell {
 
     this.status = document.createElement("div");
     this.status.className = "editor-status";
+    this.statusLabel = document.createElement("span");
+    this.statusLabel.className = "editor-status-label";
+    this.statusActions = document.createElement("div");
+    this.statusActions.className = "editor-status-actions";
+    this.importButton = document.createElement("ui-button");
+    this.importButton.type = "button";
+    this.importButton.label = "Import component";
+    this.importButton.size = "sm";
+    this.importButton.variant = "ghost";
+    this.importButton.hidden = true;
+    this.importButton.disabled = true;
+    this.importButton.title = "Select a shared component file to import.";
+    this.importButton.addEventListener("click", () => {
+      if (this.activeComponent) {
+        this.callbacks.onImportComponent(this.activeComponent);
+      }
+    });
+    this.statusActions.append(this.importButton);
+    this.status.append(this.statusLabel, this.statusActions);
 
     shell.append(header, body, this.status);
     this.root.appendChild(shell);
@@ -150,6 +180,7 @@ export class EditorShell {
     };
     this.mobileQuery.addEventListener("change", this.handleMobileQuery);
     this.syncSidebarToViewport(this.mobileQuery.matches);
+    this.loadTreeState();
   }
 
   setProjectInfo(info: EditorProjectInfo) {
@@ -175,8 +206,9 @@ export class EditorShell {
     this.projectSelect.disabled = !enabled;
   }
 
-  setFiles(files: string[], activeFile: string | null, dirtyFiles: Set<string>) {
-    this.files = files.slice();
+  setFileTree(sections: EditorFileSection[], activeFile: string | null, dirtyFiles: Set<string>) {
+    this.fileSections = sections.slice();
+    this.fileIndex = this.buildFileIndex(this.fileSections);
     this.activeFile = activeFile;
     this.dirtyFiles = new Set(dirtyFiles);
     this.renderFiles();
@@ -189,31 +221,47 @@ export class EditorShell {
     this.renderTabs();
   }
 
-  setActiveFile(path: string | null, content: string) {
-    this.activeFile = path;
-    if (!path) {
+  setActiveFile(entry: EditorFileEntry | null, content: string) {
+    this.activeEntry = entry;
+    this.activeFile = entry ? entry.id : null;
+    if (!entry) {
       this.editor.setReadOnly(true);
       this.editor.setContent("");
       this.editor.setPlaceholder("Select a file to view.");
       this.editor.setLanguageForPath(null);
-      this.status.textContent = "No file selected.";
+      this.statusLabel.textContent = "No file selected.";
+      this.importButton.hidden = true;
+      this.importButton.disabled = true;
+      this.importButton.title = "Select a shared component file to import.";
+      this.activeComponent = null;
       this.updateSaveButton();
       return;
     }
-    this.editor.setReadOnly(false);
-    this.editor.setLanguageForPath(path);
+    this.editor.setReadOnly(entry.readOnly);
+    this.editor.setLanguageForPath(entry.displayPath);
     this.editor.setContent(content);
     this.editor.setPlaceholder("");
-    this.status.textContent = this.formatStatus(path);
+    this.statusLabel.textContent = this.formatStatus(entry);
+    const canImport = entry.readOnly && entry.component?.external;
+    this.activeComponent = canImport ? entry.component?.name ?? null : null;
+    this.importButton.hidden = false;
+    this.importButton.disabled = !canImport;
+    this.importButton.title = canImport ? "Import component into project." : "Select a shared component file to import.";
     this.updateSaveButton();
   }
 
-  setLoading(path: string) {
-    this.activeFile = path;
+  setLoading(entry: EditorFileEntry) {
+    this.activeEntry = entry;
+    this.activeFile = entry.id;
     this.editor.setReadOnly(true);
     this.editor.setContent("");
     this.editor.setPlaceholder("Loading...");
-    this.status.textContent = `Loading ${path}...`;
+    this.statusLabel.textContent = `Loading ${entry.displayPath}...`;
+    this.importButton.hidden = false;
+    this.importButton.disabled = true;
+    this.importButton.title = "Select a shared component file to import.";
+    this.activeComponent = null;
+    this.updateSaveButton();
   }
 
   setDirtyFiles(dirtyFiles: Set<string>) {
@@ -221,16 +269,23 @@ export class EditorShell {
     this.renderFiles();
     this.renderTabs();
     this.updateSaveButton();
-    if (this.activeFile) {
-      this.status.textContent = this.formatStatus(this.activeFile);
+    if (this.activeEntry) {
+      this.statusLabel.textContent = this.formatStatus(this.activeEntry);
     }
   }
 
   setMessage(message: string) {
+    this.activeEntry = null;
+    this.activeFile = null;
     this.editor.setReadOnly(true);
     this.editor.setContent("");
     this.editor.setPlaceholder(message);
-    this.status.textContent = message;
+    this.statusLabel.textContent = message;
+    this.importButton.hidden = true;
+    this.importButton.disabled = true;
+    this.importButton.title = "Select a shared component file to import.";
+    this.activeComponent = null;
+    this.updateSaveButton();
   }
 
   dispose() {
@@ -241,21 +296,94 @@ export class EditorShell {
 
   private renderFiles() {
     this.fileList.innerHTML = "";
-    for (const path of this.files) {
-      const button = document.createElement("ui-button");
-      button.type = "button";
-      button.variant = "list";
-      button.active = path === this.activeFile;
-      const dirty = this.dirtyFiles.has(path);
-      button.label = dirty ? `${path} *` : path;
-      button.title = path;
-      button.addEventListener("click", () => {
-        this.callbacks.onSelectFile(path);
-        if (this.isMobile()) {
-          this.setSidebarOpen(false);
+    if (this.fileSections.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "editor-header-meta";
+      empty.textContent = "No files found.";
+      this.fileList.appendChild(empty);
+      return;
+    }
+    for (const section of this.fileSections) {
+      const sectionEl = document.createElement("div");
+      sectionEl.className = "editor-tree-section";
+      const title = document.createElement("div");
+      title.className = "editor-tree-title";
+      title.textContent = section.label;
+      sectionEl.appendChild(title);
+      const tree = document.createElement("div");
+      tree.className = "editor-tree";
+      this.renderTreeNodes(section.nodes, tree, 0);
+      sectionEl.appendChild(tree);
+      this.fileList.appendChild(sectionEl);
+    }
+  }
+
+  private renderTreeNodes(nodes: EditorFileNode[], container: HTMLElement, depth: number) {
+    for (const node of nodes) {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "editor-tree-row";
+      row.dataset.kind = node.kind;
+      row.style.paddingLeft = `${12 + depth * 14}px`;
+      if (node.entry) {
+        row.classList.toggle("is-active", node.entry.id === this.activeFile);
+        row.classList.toggle("is-readonly", node.entry.readOnly);
+        row.title = node.entry.displayPath;
+      } else {
+        row.title = node.label;
+      }
+      if (node.kind === "folder") {
+        const defaultOpen = depth === 0 && !node.id.startsWith("include:");
+        const open = this.isFolderOpen(node.id, defaultOpen);
+        row.dataset.open = open ? "true" : "false";
+        row.addEventListener("click", () => {
+          this.setFolderOpen(node.id, !open);
+          this.renderFiles();
+        });
+        const caret = document.createElement("span");
+        caret.className = "editor-tree-caret";
+        caret.innerHTML = getIconSvg(open ? "chevronDown" : "chevronRight");
+        row.appendChild(caret);
+      } else {
+        const spacer = document.createElement("span");
+        spacer.className = "editor-tree-spacer";
+        row.appendChild(spacer);
+        row.addEventListener("click", () => {
+          if (node.entry) {
+            this.callbacks.onSelectFile(node.entry.id);
+          }
+          if (this.isMobile()) {
+            this.setSidebarOpen(false);
+          }
+        });
+      }
+      const icon = document.createElement("span");
+      icon.className = "editor-tree-icon";
+      icon.innerHTML = getIconSvg(node.kind === "folder" ? "folder" : "file");
+      const label = document.createElement("span");
+      label.className = "editor-tree-label";
+      label.textContent = node.label;
+      row.append(icon, label);
+      if (node.entry && this.dirtyFiles.has(node.entry.id)) {
+        const dirty = document.createElement("span");
+        dirty.className = "editor-tree-dirty";
+        dirty.textContent = "*";
+        row.appendChild(dirty);
+      }
+      if (node.entry?.readOnly) {
+        const tag = document.createElement("span");
+        tag.className = "editor-tree-tag";
+        tag.textContent = "ro";
+        row.appendChild(tag);
+      }
+      container.appendChild(row);
+      if (node.kind === "folder") {
+        const defaultOpen = depth === 0 && !node.id.startsWith("include:");
+        const open = this.isFolderOpen(node.id, defaultOpen);
+        if (open && node.children && node.children.length > 0) {
+          this.renderTreeNodes(node.children, container, depth + 1);
         }
-      });
-      this.fileList.appendChild(button);
+      }
     }
   }
 
@@ -267,8 +395,9 @@ export class EditorShell {
       tab.variant = "tab";
       tab.active = path === this.activeFile;
       const dirty = this.dirtyFiles.has(path);
-      tab.label = dirty ? `${this.tabLabel(path)} *` : this.tabLabel(path);
-      tab.title = path;
+      const label = this.tabLabel(path);
+      tab.label = dirty ? `${label} *` : label;
+      tab.title = this.fileIndex.get(path)?.displayPath ?? path;
       tab.addEventListener("click", () => {
         this.callbacks.onSelectTab(path);
       });
@@ -283,17 +412,23 @@ export class EditorShell {
   }
 
   private tabLabel(path: string) {
+    const entry = this.fileIndex.get(path);
+    if (entry) return entry.label;
     const parts = path.split("/");
     return parts[parts.length - 1] || path;
   }
 
-  private formatStatus(path: string) {
-    const dirty = this.dirtyFiles.has(path) ? " (modified)" : "";
-    return `${path}${dirty}`;
+  private formatStatus(entry: EditorFileEntry) {
+    const dirty = this.dirtyFiles.has(entry.id) ? " (modified)" : "";
+    const status = entry.readOnly ? " (read-only)" : "";
+    return `${entry.displayPath}${dirty}${status}`;
   }
 
   private updateSaveButton() {
-    const enabled = this.activeFile !== null && this.dirtyFiles.has(this.activeFile);
+    const enabled =
+      this.activeFile !== null &&
+      !this.activeEntry?.readOnly &&
+      this.dirtyFiles.has(this.activeFile);
     this.saveButton.disabled = !enabled;
     this.saveButton.title = enabled ? "Save (Ctrl/Cmd+S)" : "No changes";
   }
@@ -416,5 +551,58 @@ export class EditorShell {
       window.addEventListener("pointermove", onPointerMove);
       window.addEventListener("pointerup", onPointerUp);
     });
+  }
+
+  private buildFileIndex(sections: EditorFileSection[]) {
+    const index = new Map<string, EditorFileEntry>();
+    const visit = (nodes: EditorFileNode[]) => {
+      for (const node of nodes) {
+        if (node.entry) {
+          index.set(node.entry.id, node.entry);
+        }
+        if (node.children) {
+          visit(node.children);
+        }
+      }
+    };
+    for (const section of sections) {
+      visit(section.nodes);
+    }
+    return index;
+  }
+
+  private loadTreeState() {
+    try {
+      const raw = window.localStorage.getItem(this.treeStateKey);
+      if (!raw) return;
+      const data = JSON.parse(raw) as Record<string, boolean>;
+      for (const [key, value] of Object.entries(data)) {
+        this.treeState.set(key, value);
+      }
+    } catch {
+      return;
+    }
+  }
+
+  private saveTreeState() {
+    try {
+      const data: Record<string, boolean> = {};
+      for (const [key, value] of this.treeState.entries()) {
+        data[key] = value;
+      }
+      window.localStorage.setItem(this.treeStateKey, JSON.stringify(data));
+    } catch {
+      return;
+    }
+  }
+
+  private isFolderOpen(id: string, defaultOpen: boolean) {
+    const stored = this.treeState.get(id);
+    return stored === undefined ? defaultOpen : stored;
+  }
+
+  private setFolderOpen(id: string, open: boolean) {
+    this.treeState.set(id, open);
+    this.saveTreeState();
   }
 }

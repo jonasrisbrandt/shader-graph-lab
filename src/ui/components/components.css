@@ -33,7 +33,7 @@ ui-badge {
   font-size: 11px;
 }
 
-.ui-button:hover:not([data-variant="primary"]) {
+.ui-button:not(:disabled):hover:not([data-variant="primary"]) {
   background: var(--ui-hover);
 }
 
@@ -44,7 +44,7 @@ ui-badge {
 
 .ui-button:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
+  cursor: default;
 }
 
 .ui-button[data-variant="primary"] {
@@ -53,7 +53,7 @@ ui-badge {
   color: #ffffff;
 }
 
-.ui-button[data-variant="primary"]:hover {
+.ui-button[data-variant="primary"]:not(:disabled):hover {
   background: var(--ui-accent-strong);
 }
 
@@ -75,7 +75,7 @@ ui-badge {
   border-color: transparent;
 }
 
-.ui-button[data-variant="list"]:hover {
+.ui-button[data-variant="list"]:not(:disabled):hover {
   background: var(--ui-hover);
 }
 
@@ -136,8 +136,13 @@ ui-badge {
   border-color: var(--ui-accent);
 }
 
-.ui-select:hover {
+.ui-select:not(:disabled):hover {
   background: var(--ui-hover);
+}
+
+.ui-select:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .ui-badge {

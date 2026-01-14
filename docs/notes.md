@@ -353,3 +353,6 @@
 ## Update 2026-01-14
 - Added component-local shader maps in component JSON; component pass refs resolve against component shaders before project shaders.
 - Moved common component shader includes into their component JSON and trimmed project shader lists.
+- Discussion: redesign editor file picker into a VSCode-style tree with component include visibility; open question on editing external component files (read-only vs import/override).
+- Implemented a VSCode-style file tree with a separate includes section and an import workflow for external components (read-only by default).
+- Includes list now shows only external components; once imported they move into the Project tree.

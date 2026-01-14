@@ -229,7 +229,7 @@ body.is-editing #editor-root {
 .editor-files {
   flex: 1;
   overflow: auto;
-  padding: 0 8px 12px 8px;
+  padding: 6px 8px 12px 8px;
 }
 
 .editor-main {
@@ -258,6 +258,123 @@ body.is-editing #editor-root {
   font-size: 11px;
   color: var(--ui-muted);
   background: var(--ui-panel-alt);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.editor-status-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-status-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.editor-tree-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.editor-tree-section + .editor-tree-section {
+  margin-top: 10px;
+}
+
+.editor-tree-title {
+  padding: 6px 8px 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ui-muted);
+}
+
+.editor-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.editor-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  font: 12px/1.4 var(--ui-font-mono);
+  color: var(--ui-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.editor-tree-row:hover {
+  background: var(--ui-hover);
+}
+
+.editor-tree-row.is-active {
+  background: var(--ui-highlight-strong);
+  border-color: var(--ui-accent);
+}
+
+.editor-tree-row.is-readonly {
+  color: var(--ui-muted);
+}
+
+.editor-tree-caret,
+.editor-tree-spacer {
+  width: 12px;
+  height: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ui-muted);
+}
+
+.editor-tree-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ui-muted);
+}
+
+.editor-tree-icon svg,
+.editor-tree-caret svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+}
+
+.editor-tree-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-tree-dirty {
+  color: var(--ui-accent);
+  font-weight: 700;
+}
+
+.editor-tree-tag {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 1px 4px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  color: var(--ui-muted);
 }
 
 body.is-resizing {
