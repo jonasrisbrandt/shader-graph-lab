@@ -1,34 +1,27 @@
-# Resume Context
+# Resume
 
 ## Current State
-- Added a landing page at `/` and moved the render/editor app to `/app.html` with a multi-page Vite build (`vite.config.ts`).
-- Landing page is driven by `public/landing.json` and rendered by `src/landing.ts` with styling in `src/ui/landing.css`.
-- Landing showcases now render **real project thumbnails** via the existing render stack:
-  - Each card initializes a WebGL2 canvas lazily, renders a still frame at `previewTime`, and animates on hover.
-  - Uses `loadProject`, `loadProjectAssets`, `buildGraphFromProject`, and `GraphRunner`.
-  - If WebGL2/project load fails, shows a generic warning overlay (no SVG project thumbs).
-- Added per-graph `timeOffset` support so `uTime` can start at a chosen value for better still frames.
-- Adopted Lit (light DOM) for editor UI components (buttons/selects/badges/tabs) while keeping lil-gui for render controls.
-- Editor header, tab bar, file list, and render-mode Edit button now use `ui-*` components from `src/ui/components`.
+- Project rebranded to ShaderLoom: titles/metadata updated in `README.md`, `app.html`, `index.html`, `public/landing.json`, `src/ui/error-overlay.ts`, and package names updated in `package.json` + `package-lock.json`.
+- Landing page workflow section removed (and nav link removed) in `index.html`.
+- Editor file picker upgraded to a VSCode-style tree with “Project” and “Shared” sections; shared files are read-only and show a “ro” tag.
+- Shared components show only external includes; once imported they move into the Project tree.
+- Import workflow copies component JSON + shader files into `components/<name>/`, rewrites `project.json` to point there, and rewrites shader `#include` paths to preserve chunk refs.
+- Read-only external files are fetch-resolved; project files use `ProjectStore` and can be edited/saved.
+- Import button is enabled only when an external shared component file is selected; disabled hover/cursor styling updated globally for disabled UI controls.
 
-## Key Files
-- Landing: `index.html`, `src/landing.ts`, `src/ui/landing.css`, `public/landing.json`
-- App entry: `app.html`
-- Graph time offset: `src/render/runtime.ts`, `src/render/project.ts`, `src/render/graph.ts`, `src/render/types.ts`
-- UI components: `src/ui/components/*`, `src/ui/components/components.css`
-- Editor UI: `src/editor-ui/editor-shell.ts`, `src/ui/editor.css`
-- Menger component: `public/projects/common/components/menger/*`
-- Project list: `public/projects/index.json`
+## Key Changes (files)
+- `src/editor/file-tree.ts`: tree model + builder.
+- `src/editor/editor-session.ts`: include scanner, external resolver, import logic, shared filtering.
+- `src/editor-ui/editor-shell.ts`: tree rendering, status/import controls, read-only handling.
+- `src/ui/editor.css`: tree/status styling.
+- `src/ui/components/components.css`: disabled hover/cursor behavior.
+- `src/ui/icons.ts`: added folder/file/caret icons.
+- `docs/decisions/ADR-0013-editor-component-import.md`: decision record for read-only + import.
 
-## Notes / Decisions
-- ADRs added: `docs/decisions/ADR-0008-landing-page.md`, `ADR-0009-graph-time-offset.md`, `ADR-0010-landing-runtime-thumbnails.md`.
-- ADR added: `docs/decisions/ADR-0011-lit-ui-components.md` for Lit light-DOM UI components.
-- GitHub Pages deploy workflow added in `.github/workflows/deploy.yml` and `vite.config.ts` reads `VITE_BASE`.
-- Fixed project URL resolution for Pages subpaths in `src/editor/project-store.ts` and `src/main.ts`.
+## Recent Commits
+- `8ecba22` “Improve editor file tree”.
+- `43dce82` “Rename app to ShaderLoom”.
 
-## Latest Fix (Pending Verification)
-- Hover animation on landing thumbnails wasn't running because `resizeCanvasToDisplaySize()` only returned `true` when the size changed. Updated to return `true` whenever the canvas has a valid size so animation renders every frame (`src/landing.ts`).
-- Fixed `ui-button` light DOM rendering to avoid duplicated inline text and added hover background styling (`src/ui/components/ui-button.ts`, `src/ui/components/components.css`).
-
-## Next Step
-- Quick visual check: editor header/tabs/file list + render-mode Edit button with new `ui-*` components.
+## Notes
+- IndexedDB name changed from `shader-graph-lab` to `shaderloom` (old local projects won’t appear).
+- `.git` requires escalated permissions for staging/commits.

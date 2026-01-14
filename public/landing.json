@@ -26,6 +26,11 @@
       "id": "julia-morph",
       "description": "Julia fractal morphing with smooth sinus parameter motion.",
       "previewTime": 4.0
+    },
+    {
+      "id": "feedback-zoom",
+      "description": "Infinite zoom feedback with rotating metaball source.",
+      "previewTime": 3.5
     }
   ],
   "features": [

@@ -35,6 +35,16 @@
       ]
     },
     {
+      "id": "feedback-zoom",
+      "name": "Feedback Zoom",
+      "files": [
+        "project.json",
+        "shaders/base.frag.glsl",
+        "shaders/composite.frag.glsl",
+        "shaders/feedback.frag.glsl"
+      ]
+    },
+    {
       "id": "input-sized",
       "name": "Input Sized",
       "files": [

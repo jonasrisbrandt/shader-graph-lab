@@ -356,3 +356,10 @@
 - Discussion: redesign editor file picker into a VSCode-style tree with component include visibility; open question on editing external component files (read-only vs import/override).
 - Implemented a VSCode-style file tree with a separate includes section and an import workflow for external components (read-only by default).
 - Includes list now shows only external components; once imported they move into the Project tree.
+
+## Update 2026-01-14
+- Added a `feedback-zoom` project with a two-pass feedback loop (metaball source + feedback composite) that applies zoom/rotation/blur to the previous frame while keeping the new source crisp.
+- Feedback controls are frame-rate independent via `uDeltaTime`, with UI-exposed decay, zoom/rotate rate, tint, blur, and base strength.
+- Added `uBallCount` (3-15) to the feedback-zoom metaballs source for controlling the number of blobs.
+- Switched feedback-zoom to an overscanned history buffer (1.25x) with a composite crop pass to hide rotation edges while keeping the base layer sharp.
+- Added `feedback-zoom` to the landing page showcase list.

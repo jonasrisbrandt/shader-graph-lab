@@ -1,0 +1,68 @@
+{
+  "shaders": {
+    "base": { "$include": "./shaders/base.frag.glsl" },
+    "feedback": { "$include": "./shaders/feedback.frag.glsl" },
+    "composite": { "$include": "./shaders/composite.frag.glsl" }
+  },
+  "graphs": {
+    "main": {
+      "uiGroups": {
+        "Source": { "order": 1 },
+        "Feedback": { "order": 2 },
+        "Composite": { "order": 3 }
+      },
+      "passes": [
+        {
+          "id": "base",
+          "fragment": { "$ref": "shader.base" },
+          "outputs": {
+            "color": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" }
+          },
+          "uniforms": {
+            "uSpeed": { "type": "f1", "value": 1.47, "min": 0.1, "max": 4, "step": 0.01, "ui": { "group": "Source", "label": "Speed" } },
+            "uBallCount": { "type": "f1", "value": 12, "min": 3, "max": 15, "step": 1, "ui": { "group": "Source", "label": "Ball Count" } },
+            "uThreshold": { "type": "f1", "value": 8.54, "min": 0.6, "max": 15, "step": 0.01, "ui": { "group": "Source", "label": "Threshold" } },
+            "uGlow": { "type": "f1", "value": 1.5, "min": 0, "max": 1.5, "step": 0.01, "ui": { "group": "Source", "label": "Glow" } }
+          }
+        },
+        {
+          "id": "feedback",
+          "fragment": { "$ref": "shader.feedback" },
+          "inputs": {
+            "uPrev": { "source": "$prev.color" },
+            "uBase": { "source": "base.color" }
+          },
+          "outputs": {
+            "color": { "format": "rgba16f", "size": { "kind": "scale", "scale": 1.25 }, "filter": "linear", "persistent": true }
+          },
+          "uniforms": {
+            "uDecay": { "type": "f1", "value": 0.985, "min": 0.9, "max": 0.999, "step": 0.001, "ui": { "group": "Feedback", "label": "Decay" } },
+            "uOverscan": { "type": "f1", "value": 1.25, "ui": { "show": false } },
+            "uZoomRate": { "type": "f1", "value": -0.78, "min": -1.5, "max": 1.5, "step": 0.01, "ui": { "group": "Feedback", "label": "Zoom Rate" } },
+            "uRotateRate": { "type": "f1", "value": 0.65, "min": -2, "max": 2, "step": 0.01, "ui": { "group": "Feedback", "label": "Rotate Rate" } },
+            "uBlur": { "type": "f1", "value": 1.1, "min": 0, "max": 3, "step": 0.01, "ui": { "group": "Feedback", "label": "Blur" } },
+            "uTint": { "type": "f3", "value": [0.9, 0.78, 0.95], "min": 0, "max": 2, "step": 0.01, "ui": { "group": "Feedback", "label": "Tint" } },
+            "uBaseStrength": { "type": "f1", "value": 0.98, "min": 0, "max": 2, "step": 0.01, "ui": { "group": "Feedback", "label": "Inject Strength" } }
+          }
+        },
+        {
+          "id": "composite",
+          "fragment": { "$ref": "shader.composite" },
+          "inputs": {
+            "uFeedback": { "source": "feedback.color" },
+            "uBase": { "source": "base.color" }
+          },
+          "outputs": {
+            "out": { "format": "rgba16f", "size": { "kind": "full" }, "filter": "linear" }
+          },
+          "uniforms": {
+            "uOverscan": { "type": "f1", "value": 1.25, "ui": { "show": false } },
+            "uFeedbackStrength": { "type": "f1", "value": 1.0, "min": 0, "max": 2, "step": 0.01, "ui": { "group": "Composite", "label": "Feedback Strength" } },
+            "uOverlayStrength": { "type": "f1", "value": 1.0, "min": 0, "max": 2, "step": 0.01, "ui": { "group": "Composite", "label": "Base Strength" } }
+          }
+        }
+      ],
+      "output": "composite.out"
+    }
+  }
+}
