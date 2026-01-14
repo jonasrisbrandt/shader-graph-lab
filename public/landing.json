@@ -1,6 +1,6 @@
 {
   "brand": "ShaderLoom",
-  "title": "ShaderLoom - Shader Graph Lab",
+  "title": "ShaderLoom",
   "eyebrow": "Render graphs for live shader sketches",
   "tagline": "ShaderToy energy, but graph-first.",
   "description": "Modular multi-pass shaders with JSON projects, reusable components, and a built-in editor.",

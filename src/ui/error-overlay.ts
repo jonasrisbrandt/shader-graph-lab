@@ -20,7 +20,7 @@ export function createErrorOverlay(): ErrorOverlay {
 
   const header = document.createElement("div");
   header.className = "overlay-header";
-  header.textContent = "Shader Graph Error";
+  header.textContent = "ShaderLoom Error";
 
   const message = document.createElement("pre");
   message.className = "overlay-message";

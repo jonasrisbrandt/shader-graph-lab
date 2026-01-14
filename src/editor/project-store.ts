@@ -179,7 +179,7 @@ export class IdbProjectStore implements ProjectStore {
   private dbName: string;
   private dbPromise: Promise<IDBDatabase> | null = null;
 
-  constructor(dbName = "shader-graph-lab") {
+  constructor(dbName = "shaderloom") {
     this.dbName = dbName;
   }
 
