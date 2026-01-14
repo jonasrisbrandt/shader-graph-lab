@@ -26,6 +26,10 @@ body.is-editing #app-resizer {
   position: relative;
 }
 
+#gl-canvas {
+  touch-action: none;
+}
+
 .render-menu {
   position: absolute;
   top: 12px;

@@ -346,3 +346,6 @@
 
 ## Update 2026-01-11
 - Added Lucide icon set and wired a small icon helper for UI buttons (menu icon).
+
+## Update 2026-01-11
+- Added touch gesture support to the orbit camera (one-finger rotate, two-finger pan + pinch zoom) and disabled touch scrolling on the render canvas.
