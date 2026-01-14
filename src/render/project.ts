@@ -1,6 +1,7 @@
 import { ComponentSpec, ComponentUniformOverrides, instantiateComponent } from "./component";
 import { GraphBuilder } from "./graph";
 import { AssetSpec, PassDef } from "./types";
+import { withCacheBust } from "../utils/cache-bust";
 
 export type IncludeRef = { $include: string };
 export type Ref = { $ref: string };
@@ -612,7 +613,7 @@ function injectSourceMapHeader(source: string, state: IncludeState, rootUrl: str
 export type TextResolver = (url: string) => Promise<string>;
 
 async function fetchText(url: string): Promise<string> {
-  const response = await fetch(url);
+  const response = await fetch(withCacheBust(url));
   if (!response.ok) {
     throw new Error(`Failed to fetch "${url}": ${response.status} ${response.statusText}`);
   }

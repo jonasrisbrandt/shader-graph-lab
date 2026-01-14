@@ -1,5 +1,6 @@
 import { AssetSpec, TextureFilter } from "./types";
 import { Project } from "./project";
+import { withCacheBust } from "../utils/cache-bust";
 
 export type AssetTexture = {
   texture: WebGLTexture;
@@ -26,7 +27,7 @@ function applyTextureParams(gl: WebGL2RenderingContext, filter: TextureFilter) {
 }
 
 function resolveAssetUrl(project: Project, url: string) {
-  return new URL(url, project.baseUrl).toString();
+  return withCacheBust(new URL(url, project.baseUrl).toString());
 }
 
 function createTexture(gl: WebGL2RenderingContext, filter: TextureFilter) {

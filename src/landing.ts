@@ -2,6 +2,7 @@ import "./ui/landing.css";
 import { GraphRunner, type CameraUniforms } from "./render/runtime";
 import { buildGraphFromProject, loadProject } from "./render/project";
 import { loadProjectAssets } from "./render/assets";
+import { withCacheBust } from "./utils/cache-bust";
 
 type LandingCta = {
   label: string;
@@ -59,7 +60,7 @@ function setLink(selector: string, cta?: LandingCta) {
 }
 
 async function loadJson<T>(url: URL): Promise<T> {
-  const response = await fetch(url.toString());
+  const response = await fetch(withCacheBust(url.toString()));
   if (!response.ok) {
     throw new Error(`Failed to fetch "${url}": ${response.status} ${response.statusText}`);
   }

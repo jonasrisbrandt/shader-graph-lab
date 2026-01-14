@@ -22,6 +22,7 @@ import {
 } from "./editor/project-store";
 import { setupAppResizer } from "./editor-ui/resizers";
 import type { UiSelect } from "./ui/components/ui-select";
+import { withCacheBust } from "./utils/cache-bust";
 
 const canvas = document.getElementById("gl-canvas") as HTMLCanvasElement;
 const gl = canvas.getContext("webgl2");
@@ -120,7 +121,7 @@ async function start() {
     return new URL(`${baseId}/project.json`, projectsBaseUrl).toString();
   };
   const fetchText = async (url: string) => {
-    const response = await fetch(url);
+    const response = await fetch(withCacheBust(url));
     if (!response.ok) {
       throw new Error(`Failed to fetch "${url}": ${response.status} ${response.statusText}`);
     }

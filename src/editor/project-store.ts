@@ -1,3 +1,5 @@
+import { withCacheBust } from "../utils/cache-bust";
+
 export type ProjectOrigin = "public" | "local";
 
 export type ProjectInfo = {
@@ -131,7 +133,7 @@ export class PublicProjectStore implements ProjectStore {
 
   async readText(projectId: string, path: string) {
     const url = `${this.baseUrl}/${projectId}/${path}`;
-    const response = await fetch(url);
+    const response = await fetch(withCacheBust(url));
     if (!response.ok) {
       throw new Error(`Failed to fetch "${url}": ${response.status} ${response.statusText}`);
     }
@@ -160,7 +162,7 @@ export class PublicProjectStore implements ProjectStore {
 
   private async loadManifest() {
     if (this.manifest) return this.manifest;
-    const response = await fetch(this.manifestUrl);
+    const response = await fetch(withCacheBust(this.manifestUrl));
     if (!response.ok) {
       throw new Error(`Failed to fetch "${this.manifestUrl}": ${response.status} ${response.statusText}`);
     }

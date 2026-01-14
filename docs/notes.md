@@ -337,3 +337,6 @@
 
 ## Update 2026-01-11
 - Added a render-scale control near the Edit button with defaults of 1 (desktop) and 0.5 (mobile), plus URL/localStorage sync.
+
+## Update 2026-01-11
+- Added cache-busting for public JSON/shader includes/assets using a build id so fresh deploys load without manual cache clears.
